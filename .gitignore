@@ -1,0 +1,44 @@
+# Dependencies — never commit (rebuilt with npm install)
+node_modules/
+apps-desktop/node_modules/
+apps-prototype/node_modules/
+
+# Build outputs — rebuilt by CI / npm run build
+dist/
+dist-main/
+apps-prototype/dist/
+apps-desktop/dist/
+apps-desktop/dist-main/
+*.tsbuildinfo
+
+# Local databases & backups — runtime data, per-machine
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+apps-desktop/*.seed.db
+roby.seed.db
+
+# Electron builder cache / unpacked installers
+*.exe
+*.dmg
+*.AppImage
+*.snap
+*.blockmap
+*.yml
+!/.github/workflows/*.yml
+out/
+
+# Runtime userdata (logs, backups, generated licenses)
+userdata/
+logs/
+backups/
+issued_keys.csv
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+.kilo/

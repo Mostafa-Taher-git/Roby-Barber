@@ -1,0 +1,50 @@
+/* Phase 0 tokens — from DESIGN_SYSTEM_AND_MAPPING.md §2 */
+:root {
+  --bg-app: #0f141f; --bg-card: #1c2436; --bg-input: #232c40;
+  --gold: #f5b842; --ok: #10b981; --danger: #ef4444; --info: #38bdf8;
+  --text: #f8fafc; --muted: #94a3b8; --border: rgba(255,255,255,.08);
+  --radius: 10px;
+}
+[data-theme="light"] {
+  --bg-app: #f4f1ea; --bg-card: #ffffff; --bg-input: #eef0f4;
+  --gold: #b97a0f; --ok: #047857; --danger: #b91c1c; --info: #0369a1;
+  --text: #131824; --muted: #5b6472; --border: rgba(0,0,0,.1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg-app); color: var(--text);
+  font-family: 'Cairo', system-ui, sans-serif; direction: rtl; }
+#root { min-height: 100vh; }
+.shell { display: flex; min-height: 100vh; }
+.sidenav { width: 230px; background: var(--bg-card); border-left: 1px solid var(--border);
+  padding: 16px 10px; display: flex; flex-direction: column; gap: 4px; }
+.sidenav button { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 10px;
+  border: 1px solid transparent; background: transparent; color: var(--muted);
+  font-size: 16px; font-weight: 700; cursor: pointer; min-height: 48px; font-family: inherit; }
+.sidenav button.active { color: var(--gold); border-color: var(--gold); background: rgba(245,184,66,.1); }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+  border-bottom: 1px solid var(--border); background: var(--bg-card); }
+.main { flex: 1; padding: 24px; max-width: 1200px; }
+.btn { min-height: 44px; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 16px;
+  cursor: pointer; border: 1px solid var(--border); font-family: inherit; }
+.btn-primary { background: var(--gold); color: #131824; border: none; }
+.btn-ghost { background: transparent; color: var(--text); }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+@media (max-width: 900px) { .grid4 { grid-template-columns: 1fr 1fr; } .grid2 { grid-template-columns: 1fr; } .sidenav { display: none; } }
+.stat { text-align: center; padding: 14px; }
+.stat b { font-size: 26px; color: var(--gold); display: block; }
+.stat span { color: var(--muted); font-size: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: right; }
+.chair { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.chair.busy { border-color: var(--gold); } .chair.free { border-color: var(--ok); }
+.badge { padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+.badge.waiting { background: #333; color: #fff; } .badge.in_chair { background: rgba(245,184,66,.2); color: var(--gold); }
+.badge.done { background: rgba(16,185,129,.2); color: var(--ok); }
+.badge.busy { background: rgba(245,184,66,.2); color: var(--gold); } .badge.free { background: rgba(16,185,129,.2); color: var(--ok); }
+.svc { border: 1px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; margin-bottom: 8px; text-align: right; width: 100%; background: var(--bg-card); color: var(--text); font-family: inherit; }
+.svc:hover { border-color: var(--gold); }
+.svc b { color: var(--gold); }
+input, select { min-height: 44px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); padding: 8px 12px; font-family: inherit; font-size: 16px; }
+.receipt { background: #fff; color: #111; border-radius: 8px; padding: 16px; font-size: 14px; max-width: 300px; margin-inline: auto; }

@@ -5,7 +5,7 @@
 > **Your `HOURLY_RATE` = ______ EGP / hour** (fill in, then multiply)
 
 * All hours below are **estimates (min–max)**. You pay **actual logged hours** per phase after acceptance.
-* Locked scope: Electron+React+SQLite, offline signed lifetime key + 7-day trial, instant save + 10-min backup, wa.me WhatsApp, cameras postponed to V2, Arabic dark+light, 80mm, editable everything incl. logo.
+* Locked scope: Electron+React+SQLite, offline signed lifetime key + 7-day trial, instant save + 10-min backup, wa.me WhatsApp, **cameras removed**, Arabic dark+light, 80mm, editable everything incl. logo.
 * Detail source: `PROJECT_PLAN.md §5`.
 
 ---
@@ -19,10 +19,9 @@
 | 3 | POS + Cashbox + Receipts + Editable Everything (incl. logo) | 22 | 28 | 22 × Rate | 28 × Rate |
 | 4 | Staff/Payroll + Inventory | 18 | 24 | 18 × Rate | 24 × Rate |
 | 5 | Activation (offline signed, lifetime + 7-day trial) | 14 | 20 | 14 × Rate | 20 × Rate |
-| 6 | WhatsApp wa.me Connector (cameras deferred) | 6 | 8 | 6 × Rate | 8 × Rate |
+| 6 | WhatsApp wa.me Connector | 6 | 8 | 6 × Rate | 8 × Rate |
 | 7 | Auto-Backup + Polish + Manual + Handover | 14 | 18 | 14 × Rate | 18 × Rate |
 | **Total V1** | | **122** | **162** | **122 × Rate** | **162 × Rate** |
-| V2-ADDON-CAM | Cameras (deferred, optional) | 10 | 16 | 10 × Rate | 16 × Rate |
 
 Example: if Rate = 500 EGP/h → V1 = 61,000–81,000 EGP. (Replace 500 with your rate.)
 
@@ -66,13 +65,13 @@ Example: if Rate = 500 EGP/h → V1 = 61,000–81,000 EGP. (Replace 500 with you
 * Kill all remaining stub buttons + validation: 4–5h
 * Demo + fixes: 1–1h
 
-### PHASE 5 — 14–20h
+### PHASE 5 — 14–20h (owner-only hardened, no generic keys)
 * Stable Machine-ID (CPU+MB+disk hash): 2–3h
-* Lock screen + 7-day trial countdown + lifetime verify: 3–4h
-* RSA-2048 sign/verify (public in app, private stays with you): 3–4h
-* `license-generator` CLI for you + key format `RB1-XXXX`: 2–3h
-* Anti-copy (key bound to MID) + revoke list + 3-PC test: 3–4h
-* Docs (how you issue keys via WhatsApp): 1–2h
+* Lock screen + 7-day trial countdown + rollback/reinstall detection: 3–4h
+* RSA-2048 sign/verify (private on your USB only, public in app): 3–4h
+* Offline `license-generator` CLI + `issued_keys.csv` log + key format `RB1-XXXX`: 2–3h
+* MID-binding + safeStorage encryption + re-verify + prod hardening (no DevTools, obfuscation) + local disputed-MID blocklist + 3-PC test: 3–4h
+* Docs (how YOU issue keys via WhatsApp, private-key backup rules): 1–2h
 
 ### PHASE 6 — 6–8h (WhatsApp only)
 * Template editor (AR) for ticket/receipt/reminder/campaign: 2–3h
@@ -87,9 +86,6 @@ Example: if Rate = 500 EGP/h → V1 = 61,000–81,000 EGP. (Replace 500 with you
 * Arabic PDF manual + screenshots + training recording: 4–5h
 * Factory-reset → install → activate → restore test: 1–1h
 
-### V2-ADDON-CAM — 10–16h (NOT in V1 total, quoted separately)
-* Camera settings (RTSP/HTTP/USB), 2/4 grid, snapshot, reconnect help (Hikvision/Dahua examples): 10–16h. ONVIF scan if wanted: +10–14h extra.
-
 ---
 ## How to Use This Sheet With Customer
 
@@ -99,4 +95,4 @@ Example: if Rate = 500 EGP/h → V1 = 61,000–81,000 EGP. (Replace 500 with you
 4. End of phase: show logged hours × Rate = invoice + demo + acceptance signature.
 5. Next phase starts only after payment. Scope changes → re-estimate in writing.
 
-*V1 excludes: cloud hosting fees (none needed — offline-first), Meta WhatsApp fees (none for wa.me), code-signing cert (~optional, at cost), ONVIF/cameras (V2).*
+*V1 excludes: cloud hosting fees (none needed — offline-first), Meta WhatsApp fees (none for wa.me), code-signing cert (~optional, at cost). No cameras in scope.*
