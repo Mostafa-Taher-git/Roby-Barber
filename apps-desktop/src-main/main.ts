@@ -1,6 +1,7 @@
-import { app, BrowserWindow, crashReporter } from 'electron';
-import path from 'node:path';
+import { app, BrowserWindow, crashReporter, dialog } from 'electron';
+import { join } from 'node:path';
 import { getDb, runMigrations } from './db/client';
+import { setupIpc } from './ipc';
 import { log } from './logger';
 
 crashReporter.start({ uploadToServer: false });
@@ -10,14 +11,15 @@ async function createWindow() {
   // DB boots before UI — Phase 1 acceptance: DB persists after reboot
   const db = getDb();
   runMigrations(db);
-  log.info('db ready');
+  setupIpc();
+  log.info('db + ipc ready');
 
   win = new BrowserWindow({
     width: 1400,
     height: 900,
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
     },
   });
@@ -28,12 +30,16 @@ async function createWindow() {
   if (devUrl) {
     await win.loadURL(devUrl);
   } else {
-    // Phase 0 prototype dist until Phase 2 renderer moves in
-    await win.loadFile(path.join(__dirname, '..', '..', 'apps-prototype', 'dist', 'index.html'));
+    // Packaged/CI renderer (built by src-renderer → dist)
+    await win.loadFile(join(__dirname, '..', 'src-renderer', 'dist', 'index.html'));
   }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(createWindow).catch((err) => {
+  log.error('boot failed', err);
+  dialog.showErrorBox('تعذر تشغيل التطبيق', String(err instanceof Error ? err.message : err));
+  app.exit(1);
+});
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });

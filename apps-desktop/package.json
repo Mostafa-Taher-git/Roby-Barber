@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "tsc -p tsconfig.main.json && electron .",
     "build:main": "tsc -p tsconfig.main.json",
-    "seed": "tsx src-main/db/seed.ts"
+    "build:renderer": "npm --prefix src-renderer run build",
+    "rebuild:native": "npx @electron/rebuild -v 33.4.11 -f -w better-sqlite3",
+    "seed": "npm run rebuild:native && electron -r tsx/cjs scripts/run-seed.cjs",
+    "smoke": "npm run rebuild:native && electron -r tsx/cjs scripts/run-tests.cjs",
+    "inspect-db": "npm run rebuild:native && electron -r tsx/cjs scripts/inspect-db.cjs",
+    "build": "npm run build:renderer && npm run build:main && npm run smoke"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

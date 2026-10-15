@@ -1,5 +1,8 @@
 // Phase 1 schema — mirrors DESIGN_SYSTEM_AND_MAPPING.md §5. Money = INTEGER EGP.
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+export type BetterSQLiteDatabase = BetterSQLite3Database<Record<string, never>>;
 
 export const salon = sqliteTable('salon', {
   id: text('id').primaryKey(),

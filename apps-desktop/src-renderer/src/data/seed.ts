@@ -3,7 +3,7 @@ export type ChairStatus = 'busy' | 'free';
 export type ApptStatus = 'waiting' | 'in_chair' | 'done';
 
 export interface Service { id: string; title: string; cat: string; price: number; duration: string; }
-export interface Chair { id: number; num: number; barber: string; status: ChairStatus; customer: string; service: string; remMins: number; }
+export interface Chair { id: number; num: number; barberId: string | null; status: ChairStatus; customer: string; service: string; remMins: number; }
 export interface Appt { id: string; name: string; phone: string; service: string; barber: string; time: string; status: ApptStatus; payment: string; price: number; }
 
 export const services: Service[] = [
@@ -19,11 +19,11 @@ export const services: Service[] = [
 ];
 
 export const chairs: Chair[] = [
-  { id: 1, num: 1, barber: 'الأسطى أحمد خليل', status: 'busy', customer: 'م/ طارق عبد العزيز', service: 'قص شعر + تظبيط لحية', remMins: 10 },
-  { id: 2, num: 2, barber: 'الأسطى أنور عسران', status: 'free', customer: '-', service: 'الكرسي شاغر وجاهز', remMins: 0 },
-  { id: 3, num: 3, barber: 'الأسطى جاسم كيتش', status: 'busy', customer: 'د/ شريف رمزي', service: 'جلسة هيدرافاشيل وبخار', remMins: 25 },
-  { id: 4, num: 4, barber: 'كابتن روبي باربر', status: 'free', customer: '-', service: 'متاح للحجز VIP', remMins: 0 },
-  { id: 5, num: 5, barber: 'الأسطى إبراهيم سعد', status: 'free', customer: '-', service: 'جاهز للزبون التالي', remMins: 0 },
+  { id: 1, num: 1, barberId: 'ahmed', status: 'busy', customer: 'م/ طارق عبد العزيز', service: 'قص شعر + تظبيط لحية', remMins: 10 },
+  { id: 2, num: 2, barberId: 'anwar', status: 'free', customer: '-', service: 'الكرسي شاغر وجاهز', remMins: 0 },
+  { id: 3, num: 3, barberId: 'jasem', status: 'busy', customer: 'د/ شريف رمزي', service: 'جلسة هيدرافاشيل وبخار', remMins: 25 },
+  { id: 4, num: 4, barberId: 'roby', status: 'free', customer: '-', service: 'متاح للحجز VIP', remMins: 0 },
+  { id: 5, num: 5, barberId: 'ibrahim', status: 'free', customer: '-', service: 'جاهز للزبون التالي', remMins: 0 },
 ];
 
 export const appointments: Appt[] = [
