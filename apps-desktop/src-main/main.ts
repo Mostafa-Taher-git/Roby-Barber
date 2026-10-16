@@ -1,4 +1,5 @@
 import { app, BrowserWindow, crashReporter, dialog, Menu, shell } from 'electron';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDb, runMigrations, rawClient } from './db/client';
 import { setupIpc } from './ipc';
@@ -12,6 +13,7 @@ let win: BrowserWindow | null = null;
 const REVALIDATE_MS = 24 * 60 * 60 * 1000; // re-verify license on launch + every 24h (PROJECT_PLAN §7)
 const BACKUP_MS = 10 * 60 * 1000; // auto-backup every 10 min + on quit (PROJECT_PLAN §8)
 const backupsDir = () => join(app.getPath('userData'), 'backups');
+const iconPath = () => join(__dirname, '..', 'build', 'icon.ico'); // dev only; packaged exe carries the icon
 
 function snapshot() {
   try {
@@ -19,6 +21,37 @@ function snapshot() {
   } catch (err) {
     log.error('auto backup failed', err); // never let a backup failure take the app down
   }
+}
+
+// Brand splash while the DB/UI boot — swapped out for the main window on first paint (Phase 7 polish).
+const SPLASH_HTML = `<!doctype html><html dir="rtl"><body style="margin:0;background:#0f141f;color:#f8fafc;
+  font-family:'Segoe UI',Tahoma,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100vh;user-select:none">
+  <div style="width:76px;height:76px;border-radius:50%;border:4px solid #f5b842;display:grid;place-items:center;
+    box-shadow:0 0 34px rgba(245,184,66,.35)">
+    <span style="font-family:Georgia,serif;font-weight:700;font-size:46px;color:#f5b842;transform:translateY(-3px)">R</span>
+  </div>
+  <div style="margin-top:14px;font-size:22px;font-weight:800;color:#f5b842">روبي باربر</div>
+  <div style="margin-top:4px;font-size:12px;color:#94a3b8">نظام إدارة صالون الحلاقة</div>
+  <div style="margin-top:18px;width:150px;height:4px;border-radius:3px;background:#232c40;overflow:hidden">
+    <div style="width:40%;height:100%;border-radius:3px;background:#f5b842;animation:slide 1.1s ease-in-out infinite"></div>
+  </div>
+  <style>@keyframes slide{0%{transform:translateX(140%)}100%{transform:translateX(-240%)}}</style>
+</body></html>`;
+
+function showSplash(): BrowserWindow {
+  const splash = new BrowserWindow({
+    width: 430,
+    height: 250,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    backgroundColor: '#0f141f',
+    webPreferences: { contextIsolation: true },
+  });
+  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(SPLASH_HTML));
+  return splash;
 }
 
 async function createWindow() {
@@ -48,16 +81,25 @@ async function createWindow() {
   // Production hardening (Phase 5): no DevTools, no menu, no app menu accelerators in packaged builds.
   if (app.isPackaged) Menu.setApplicationMenu(null);
 
+  const splash = process.env.ROBY_UI_CHECK ? null : showSplash();
+
   win = new BrowserWindow({
     width: 1400,
     height: 900,
+    show: false,
     autoHideMenuBar: true,
+    ...(existsSync(iconPath()) ? { icon: iconPath() } : {}),
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
       contextIsolation: true,
       devTools: !app.isPackaged,
     },
   });
+  win.once('ready-to-show', () => {
+    splash?.destroy();
+    win?.show();
+  });
+  setTimeout(() => splash?.destroy(), 8000).unref?.(); // safety: never trap the user behind a splash
   win.on('unresponsive', () => log.error('window unresponsive'));
   win.webContents.on('render-process-gone', (_e, details) => log.error('renderer gone', details));
   // External links (wa.me WhatsApp, etc.) open in the system browser — never inside the app shell.

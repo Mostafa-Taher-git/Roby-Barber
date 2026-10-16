@@ -39,13 +39,16 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis"]
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "artifactName": "RobyBarber-Setup-${version}.exe",
-      "shortcutName": "روبي باربر"
+      "shortcutName": "روبي باربر",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     }
   }
 }

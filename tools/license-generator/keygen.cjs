@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // OWNER-ONLY keypair generator for Roby Barber licenses. Run ONCE, offline.
-//   node tools/license-gen/keygen.cjs [keys-dir]
+//   node tools/license-generator/keygen.cjs [keys-dir]
 // Default keys-dir: %USERPROFILE%\RobyBarber-License-Keys  (OUTSIDE the repo, on purpose)
 // private.pem NEVER leaves your machine and is NEVER committed. Back it up somewhere safe —
 // without it you cannot issue license keys ever again.

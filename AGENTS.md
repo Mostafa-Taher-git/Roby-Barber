@@ -1,6 +1,6 @@
 # Roby Barber — Build & Test Commands
 
-Repo layout: `apps-desktop/` (Electron main + React renderer + SQLite). Docs: `PROJECT_PLAN.md`, `DESIGN_SYSTEM_AND_MAPPING.md`, `number_of_hours_by_phase.md`.
+Repo layout: `apps-desktop/` (Electron main + React renderer + SQLite), `demo/` (old browser prototype, not for production), `tools/license-generator/` (owner-only key tooling), `docs/` (user manual). Docs: `PROJECT_PLAN.md`, `DESIGN_SYSTEM_AND_MAPPING.md`, `number_of_hours_by_phase.md`.
 
 ## Local build
 
@@ -81,7 +81,7 @@ All money math lives in pure functions (`subtotal - discount + tip`). UI never c
 
 ## Licensing (Phase 5)
 
-Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button). Owner tooling in `tools/license-gen/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.
+Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button). Owner tooling in `tools/license-generator/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer, plus double-click `.bat` helpers and an Arabic README for the owner). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.
 
 ## WhatsApp (Phase 6)
 
@@ -90,3 +90,11 @@ Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + 
 ## Backup (Phase 7)
 
 `src-main/packages/backup.ts` + timers in `main.ts` + handlers in `ipc/index.ts`. Snapshots use SQLite `VACUUM INTO` (transactional, safe while the app runs) then gzip → `%APPDATA%\roby-barber-desktop\backups\roby-YYYYMMDD-HHmmss.db.gz` (gzip, not zip — zero extra deps). Auto-run: every 10 min, once ~90s after boot, and on `before-quit`. Retention: keeps newest + hourly for 24h + first-of-day for 30 days, hard cap 2 GB. Restore validates the archive (gzip magic → SQLite header → `integrity_check` → core tables), makes a safety snapshot, closes/swaps the DB file and `app.relaunch()`s. Export/import go through native save/open dialogs (USB stick workflow); Settings page has the backup card. Windows note: close a better-sqlite3 handle *before* unlinking its file (EBUSY) and pass `Date` objects to `fs.utimesSync` (raw ms numbers → EINVAL under Electron here).
+
+## Handover assets (Phase 7)
+
+* `apps-desktop/build/icon.ico` + `icon.png` — brand mark (dark navy + gold ring + serif "R"). Regenerate: `npx electron scripts/make-icon.cjs` (from `apps-desktop`). Wired into `electron-builder` (`win.icon`, NSIS installer/uninstaller icons) and the dev window icon; packaged exe gets it automatically.
+* Splash screen: inline HTML in `main.ts`, shown until the main window's first paint (skipped under `ROBY_UI_CHECK`).
+* `docs/manual.html` → `docs/RobyBarber-User-Manual-AR.pdf` — full Arabic user manual. Regenerate after editing the HTML: `npx electron scripts/make-manual.cjs` (from `apps-desktop`).
+* `demo/` — the original browser prototype for reference/demos only (localStorage, no DB). Launcher: `demo/تشغيل_الصالون.bat`.
+* License generator handover kit: `tools/license-generator/` with Arabic README + `1-Generate-Keys.bat` / `2-Sign-License.bat` (owner needs Node.js LTS installed once).

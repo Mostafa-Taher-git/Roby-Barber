@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // OWNER-ONLY license key signer. Offline tool — run it on your own machine.
-//   node tools/license-gen/sign.cjs --mid MID-XXXX-XXXX [--keys DIR] [--by "الاسم"]
+//   node tools/license-generator/sign.cjs --mid MID-XXXX-XXXX [--keys DIR] [--by "الاسم"]
 // Prints the RB1-... lifetime key for that machine and appends it to issued_keys.csv.
 // The payload format MUST stay identical to apps-desktop/src-main/packages/license/key.ts
 // (field order v, mid, kind, issued is part of the signed bytes).
