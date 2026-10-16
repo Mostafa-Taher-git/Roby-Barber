@@ -1,8 +1,9 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { activityLog, appointments, inventory, sales, staff, type BetterSQLiteDatabase } from '../db/schema';
+import { listBackups } from './backup';
 
 /** Overview KPIs — real queries, never hardcoded (DESIGN doc §9 troubleshooting). */
-export function overview(db: BetterSQLiteDatabase) {
+export function overview(db: BetterSQLiteDatabase, backupsDir?: string) {
   const today = new Date().toISOString().slice(0, 10);
   const salesRows = db.select().from(sales).all();
   const todaySales = salesRows.filter((s) => s.at.slice(0, 10) === today).reduce((sum, s) => sum + s.total, 0);
@@ -15,7 +16,7 @@ export function overview(db: BetterSQLiteDatabase) {
     waiting: apptRows.filter((a) => a.status === 'waiting').length,
     criticalStock,
     staff: db.select().from(staff).all().filter((s) => !s.deletedAt).length,
-    lastBackup: null as string | null,
+    lastBackup: (backupsDir ? listBackups(backupsDir)[0]?.at : null) ?? null,
   };
 }
 

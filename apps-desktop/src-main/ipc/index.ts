@@ -1,6 +1,6 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, dialog, shell } from 'electron';
 import path from 'node:path';
-import { getDb } from '../db/client';
+import { getDb, rawClient, closeDb, dbPath } from '../db/client';
 import { listAppointments, listChairs, createBooking, seatBooking, seatNextWaiting, finishChair } from '../packages/queue';
 import { listServices, listCustomers, listStaff, saveService, deleteService } from '../packages/catalog';
 import { overview, logActivity, activity } from '../packages/reports';
@@ -12,15 +12,34 @@ import { inventoryPage, saveStockItem, deleteStockItem, restockItem } from '../p
 import { licenseState, activateLicense } from '../packages/license';
 import { PUBLIC_KEY_PEM } from '../packages/license/publicKey';
 import { waShare } from '../packages/whatsapp';
+import { createBackup, listBackups, validateBackup, applyDbFile, exportBackup, CORE_TABLES } from '../packages/backup';
 import { log } from '../logger';
 
 const logosDir = () => path.join(app.getPath('userData'), 'logos');
 const staffPhotosDir = () => path.join(app.getPath('userData'), 'staff');
+const backupsDir = () => path.join(app.getPath('userData'), 'backups');
 const currentMonth = () => new Date().toISOString().slice(0, 7);
+
+/** Validate → safety snapshot → swap files → relaunch (Phase 7 restore flow). */
+function restoreFrom(file: string): { ok: boolean; error?: string } {
+  const check = validateBackup(file, CORE_TABLES);
+  if (!check.ok) return { ok: false, error: check.error };
+  try {
+    createBackup(rawClient(), backupsDir());
+    logActivity(getDb(), `تم أخذ نسخة أمان قبل الاستعادة (${path.basename(file)})`);
+  } catch (err) {
+    log.warn('pre-restore safety backup failed', err);
+  }
+  closeDb();
+  applyDbFile(check.dbFile, dbPath());
+  log.info('restore applied — relaunching', path.basename(file));
+  setTimeout(() => { app.relaunch(); app.exit(0); }, 600);
+  return { ok: true };
+}
 
 type Handler = (args: unknown[]) => unknown;
 const handlers: Record<string, Handler> = {
-  'overview': () => overview(getDb()),
+  'overview': () => overview(getDb(), backupsDir()),
   'chairs': () => listChairs(getDb()),
   'appointments': ([filter]) => listAppointments(getDb(), filter as string | undefined),
   'waiting-queue': () => listAppointments(getDb(), 'waiting'),
@@ -142,6 +161,45 @@ const handlers: Record<string, Handler> = {
 
   // Phase 6 — WhatsApp
   'wa-share': ([input]) => waShare(getDb(), input as Parameters<typeof waShare>[1]),
+
+  // Phase 7 — Backup & restore
+  'backup-now': () => {
+    const info = createBackup(rawClient(), backupsDir());
+    logActivity(getDb(), `نسخة احتياطية يدوية: ${info.name}`);
+    return info;
+  },
+  'backup-list': () => listBackups(backupsDir()),
+  'backup-status': () => {
+    const list = listBackups(backupsDir());
+    return { last: list[0] ?? null, count: list.length, dir: backupsDir() };
+  },
+  'backup-open-folder': async () => {
+    await shell.openPath(backupsDir());
+    return { ok: true };
+  },
+  'backup-export': async ([file]) => {
+    const source = (file as string) || listBackups(backupsDir())[0]?.path;
+    if (!source) throw new Error('لا توجد نسخة احتياطية للتصدير');
+    const res = await dialog.showSaveDialog({
+      title: 'تصدير نسخة احتياطية (فلاشة USB مثلاً)',
+      defaultPath: `RobyBarber-backup-${new Date().toISOString().slice(0, 10)}.db.gz`,
+      filters: [{ name: 'Roby Barber backup', extensions: ['gz'] }],
+    });
+    if (res.canceled || !res.filePath) return { ok: false, canceled: true };
+    exportBackup(source, res.filePath);
+    logActivity(getDb(), `تم تصدير نسخة احتياطية إلى ${res.filePath}`);
+    return { ok: true, path: res.filePath };
+  },
+  'backup-import': async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'اختر ملف نسخة احتياطية (.db.gz)',
+      filters: [{ name: 'Roby Barber backup', extensions: ['gz'] }],
+      properties: ['openFile'],
+    });
+    if (res.canceled || res.filePaths.length === 0) return { ok: false, canceled: true };
+    return restoreFrom(res.filePaths[0]);
+  },
+  'restore-backup': ([file]) => restoreFrom(file as string),
 };
 
 export function setupIpc() {

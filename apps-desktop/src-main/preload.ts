@@ -15,6 +15,7 @@ const channels = [
   'inventory', 'save-stock', 'delete-stock', 'restock',
   'license-state', 'activate',
   'wa-share',
+  'backup-now', 'backup-list', 'backup-status', 'backup-open-folder', 'backup-export', 'backup-import', 'restore-backup',
 ] as const;
 
 contextBridge.exposeInMainWorld('roby', {
@@ -28,5 +29,5 @@ contextBridge.exposeInMainWorld('roby', {
     ipcRenderer.on('roby:license-changed', () => cb());
   },
   version: '0.1.0',
-  phase: 6,
+  phase: 7,
 });

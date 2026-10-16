@@ -5,7 +5,7 @@
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
-const files = ['smoke-phase2.ts', 'smoke-phase3.ts', 'smoke-phase4.ts', 'smoke-phase5.ts', 'smoke-phase6.ts'];
+const files = ['smoke-phase2.ts', 'smoke-phase3.ts', 'smoke-phase4.ts', 'smoke-phase5.ts', 'smoke-phase6.ts', 'smoke-phase7.ts'];
 let failed = false;
 for (const f of files) {
   const r = spawnSync(process.execPath, ['-r', 'tsx/cjs', path.join(__dirname, f)], {

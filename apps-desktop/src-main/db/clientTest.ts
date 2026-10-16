@@ -18,6 +18,7 @@ import * as key from '../packages/license/key';
 import { machineId } from '../packages/license/machineId';
 import * as whatsapp from '../packages/whatsapp';
 import * as waCompose from '../packages/whatsapp/compose';
+import * as backup from '../packages/backup';
 
 export function build(file: string) {
   const sqlite = new Database(file);
@@ -106,5 +107,15 @@ export function build(file: string) {
     normalizePhone: waCompose.normalizeEgyptPhone,
     fillTemplate: waCompose.fillTemplate,
     waLink: waCompose.waLink,
+
+    createBackup: (dir: string, now?: Date) => backup.createBackup(sqlite, dir, now),
+    listBackups: backup.listBackups,
+    pruneBackups: backup.pruneBackups,
+    validateBackup: backup.validateBackup,
+    applyDbFile: backup.applyDbFile,
+    exportBackup: backup.exportBackup,
+    backupName: backup.backupName,
+    coreTables: backup.CORE_TABLES,
+    overviewWithBackups: (dir: string) => reports.overview(db, dir),
   };
 }

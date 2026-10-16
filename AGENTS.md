@@ -36,11 +36,11 @@ npm run rebuild:native        # better-sqlite3 -> Electron ABI (REQUIRED, see be
 
 ```powershell
 cd apps-desktop
-npm run smoke      # queue + money + payroll/stock + license + whatsapp tests against real SQLite (no GUI)
+npm run smoke      # queue + money + payroll/stock + license + whatsapp + backup tests against real SQLite (no GUI)
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 194/194 PASS (gate: queue 13, money 45, payroll/stock 62, license 42, whatsapp 32).
+Current status: `smoke` = 220/220 PASS (gate: queue 13, money 45, payroll/stock 62, license 42, whatsapp 32, backup 26).
 
 Headless UI self-check (verifies the renderer actually boots with live DB data — or shows the license lock screen):
 
@@ -86,3 +86,7 @@ Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + 
 ## WhatsApp (Phase 6)
 
 `wa.me` click-to-chat only — no API, no network keys. Templates are DB rows (`templates` table, 4 kinds: ticket/receipt/reminder/campaign) editable in Settings; `{placeholders}` are filled in main (`packages/whatsapp/`), unknown ones stay visible. All sends go through `wa-share` IPC (composes + logs to the activity feed); the renderer only opens the returned URL (main's `setWindowOpenHandler` sends http(s) links to the system browser). Customer phones are normalized to `20…` international format; invalid numbers throw Arabic errors.
+
+## Backup (Phase 7)
+
+`src-main/packages/backup.ts` + timers in `main.ts` + handlers in `ipc/index.ts`. Snapshots use SQLite `VACUUM INTO` (transactional, safe while the app runs) then gzip → `%APPDATA%\roby-barber-desktop\backups\roby-YYYYMMDD-HHmmss.db.gz` (gzip, not zip — zero extra deps). Auto-run: every 10 min, once ~90s after boot, and on `before-quit`. Retention: keeps newest + hourly for 24h + first-of-day for 30 days, hard cap 2 GB. Restore validates the archive (gzip magic → SQLite header → `integrity_check` → core tables), makes a safety snapshot, closes/swaps the DB file and `app.relaunch()`s. Export/import go through native save/open dialogs (USB stick workflow); Settings page has the backup card. Windows note: close a better-sqlite3 handle *before* unlinking its file (EBUSY) and pass `Date` objects to `fs.utimesSync` (raw ms numbers → EINVAL under Electron here).

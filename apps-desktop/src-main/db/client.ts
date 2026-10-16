@@ -38,6 +38,22 @@ export function getDb() {
   return db;
 }
 
+/** Minimal raw-handle shape callers need (backup uses exec; restore uses close via closeDb). */
+export interface RawHandle { exec: (sql: string) => unknown; close: () => void; }
+
+/** Raw better-sqlite3 handle (backup + restore). Main-only. */
+export function rawClient(): RawHandle {
+  getDb();
+  return (db as unknown as { $client: RawHandle }).$client;
+}
+
+/** Close the singleton so the file can be swapped (restore). Next getDb() reopens. */
+export function closeDb() {
+  if (!db) return;
+  try { (db as unknown as { $client: { close: () => void } }).$client.close(); } catch { /* already closed */ }
+  db = null;
+}
+
 export function runMigrations(database: BetterSQLite3Database) {
   for (const sqlDef of TABLES) database.run(sqlDef);
   // Phase 3 v2: expenses gained `at` (ISO). Old DBs: add + backfill so today's financials see them.

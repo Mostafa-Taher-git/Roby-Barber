@@ -71,6 +71,14 @@ function electronApi(invoke: (channel: string, ...args: unknown[]) => Promise<un
     activate: (key) => call('activate', key),
 
     waShare: (input) => call('wa-share', input),
+
+    backupNow: () => call('backup-now'),
+    backupList: () => call('backup-list'),
+    backupStatus: () => call('backup-status'),
+    openBackupsFolder: () => call('backup-open-folder'),
+    backupExport: (file) => call('backup-export', file),
+    backupImport: () => call('backup-import'),
+    restoreBackup: (file) => call('restore-backup', file),
   };
 }
 
@@ -322,6 +330,15 @@ function fallbackApi(): RobyApi {
       const text = body.replace(/\{(\w+)\}/g, (t, k: string) => (input.vars && Object.prototype.hasOwnProperty.call(input.vars, k) ? String(input.vars[k]) : t));
       return { url: `https://wa.me/${digits}?text=${encodeURIComponent(text)}`, text, label: input.kind, to: digits };
     },
+
+    // Preview: backups only exist in the real app (they touch the DB file).
+    async backupNow() { return { name: 'preview.db.gz', path: 'preview', size: 0, at: new Date().toISOString() }; },
+    async backupList() { return []; },
+    async backupStatus() { return { last: null, count: 0, dir: 'preview' }; },
+    async openBackupsFolder() { return { ok: false }; },
+    async backupExport() { return { ok: false, canceled: true }; },
+    async backupImport() { return { ok: false, canceled: true }; },
+    async restoreBackup() { return { ok: false, canceled: true }; },
   };
 }
 

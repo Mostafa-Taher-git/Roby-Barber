@@ -1,14 +1,25 @@
 import { app, BrowserWindow, crashReporter, dialog, Menu, shell } from 'electron';
 import { join } from 'node:path';
-import { getDb, runMigrations } from './db/client';
+import { getDb, runMigrations, rawClient } from './db/client';
 import { setupIpc } from './ipc';
 import { licenseState } from './packages/license';
 import { PUBLIC_KEY_PEM } from './packages/license/publicKey';
+import { createBackup } from './packages/backup';
 import { log } from './logger';
 
 crashReporter.start({ uploadToServer: false });
 let win: BrowserWindow | null = null;
 const REVALIDATE_MS = 24 * 60 * 60 * 1000; // re-verify license on launch + every 24h (PROJECT_PLAN §7)
+const BACKUP_MS = 10 * 60 * 1000; // auto-backup every 10 min + on quit (PROJECT_PLAN §8)
+const backupsDir = () => join(app.getPath('userData'), 'backups');
+
+function snapshot() {
+  try {
+    createBackup(rawClient(), backupsDir());
+  } catch (err) {
+    log.error('auto backup failed', err); // never let a backup failure take the app down
+  }
+}
 
 async function createWindow() {
   // DB boots before UI — Phase 1 acceptance: DB persists after reboot
@@ -27,6 +38,12 @@ async function createWindow() {
   };
   const licenseTimer = setInterval(revalidate, REVALIDATE_MS);
   licenseTimer.unref?.();
+
+  // Phase 7 — auto-backup: first snapshot shortly after boot, then every 10 min, plus on quit.
+  const backupTimer = setInterval(snapshot, BACKUP_MS);
+  backupTimer.unref?.();
+  setTimeout(snapshot, 90 * 1000).unref?.();
+  app.on('before-quit', snapshot);
 
   // Production hardening (Phase 5): no DevTools, no menu, no app menu accelerators in packaged builds.
   if (app.isPackaged) Menu.setApplicationMenu(null);

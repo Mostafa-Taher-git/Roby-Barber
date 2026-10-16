@@ -1,6 +1,6 @@
-// S8 — Settings: salon info, logo, pricing editor, offers, WhatsApp templates (DESIGN doc §4/§6).
+// S8 — Settings: salon info, logo, pricing editor, offers, WhatsApp templates, backups (DESIGN doc §4/§6).
 import { useEffect, useState } from 'react';
-import { CAT_LABELS, type Offer, type RobyApi, type Salon, type Service, type Template } from '../api';
+import { CAT_LABELS, type BackupInfo, type BackupStatus, type Offer, type RobyApi, type Salon, type Service, type Template } from '../api';
 import type { ToastKind } from '../components/Toast';
 import { egp } from '../format';
 
@@ -26,6 +26,11 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
   const [offers, setOffers] = useState<Offer[]>([]);
   const [newSvc, setNewSvc] = useState({ title: '', cat: 'hair', price: '', duration: '' });
   const [newOffer, setNewOffer] = useState({ title: '', descAr: '', price: '' });
+  const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
+  const [backupList, setBackupList] = useState<BackupInfo[]>([]);
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  useEffect(() => { api.backupStatus().then(setBackupStatus).catch(() => {}); }, [api]);
 
   useEffect(() => {
     if (salon) setForm({ nameAr: salon.nameAr, address: salon.address, phone: salon.phone, instapay: salon.instapay, vodafone: salon.vodafone });
@@ -128,6 +133,54 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
       toast('success', 'تم حذف العرض');
     } catch (e) { toast('error', (e as Error).message); }
   };
+
+  const refreshBackups = async () => {
+    try {
+      const [status, list] = await Promise.all([api.backupStatus(), api.backupList()]);
+      setBackupStatus(status);
+      setBackupList(list.slice(0, 5));
+    } catch (e) { toast('error', (e as Error).message); }
+  };
+
+  const backupNow = async () => {
+    setBackupBusy(true);
+    try {
+      const info = await api.backupNow();
+      toast('success', `تم إنشاء نسخة احتياطية (${Math.round(info.size / 1024)} ك.ب)`);
+      await refreshBackups();
+    } catch (e) { toast('error', (e as Error).message); }
+    setBackupBusy(false);
+  };
+
+  const exportBackup = async () => {
+    try {
+      const res = await api.backupExport(backupStatus?.last?.path);
+      if (res.ok) toast('success', `تم التصدير إلى ${res.path}`);
+      else if (!res.canceled) toast('error', 'تعذر التصدير');
+    } catch (e) { toast('error', (e as Error).message); }
+  };
+
+  const importBackup = async () => {
+    if (!window.confirm('استعادة نسخة احتياطية؟ سيتم إغلاق البرنامج وإعادة تشغيله بالبيانات المستعادة.')) return;
+    try {
+      const res = await api.backupImport();
+      if (res.ok) toast('success', 'تمت الاستعادة — جارٍ إعادة التشغيل…');
+      else if (res.error) toast('error', res.error);
+    } catch (e) { toast('error', (e as Error).message); }
+  };
+
+  const restoreFile = async (f: BackupInfo) => {
+    if (!window.confirm(`استعادة نسخة ${new Date(f.at).toLocaleString('ar-EG')}؟ سيتم إغلاق البرنامج وإعادة تشغيله.`)) return;
+    try {
+      const res = await api.restoreBackup(f.path);
+      if (res.ok) toast('success', 'تمت الاستعادة — جارٍ إعادة التشغيل…');
+      else if (res.error) toast('error', res.error);
+    } catch (e) { toast('error', (e as Error).message); }
+  };
+
+  const lastBackupLabel = backupStatus?.last
+    ? `${new Date(backupStatus.last.at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })} — ${Math.round(backupStatus.last.size / 1024)} ك.ب (${backupStatus.count} نسخة)`
+    : 'لا توجد نسخ بعد';
 
   return (
     <>
@@ -242,6 +295,42 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
         <div className="modal-actions">
           <button className="btn btn-primary" onClick={saveTpl}>حفظ القوالب</button>
         </div>
+      </div>
+
+      <div className="card">
+        <h3>النسخ الاحتياطي التلقائي</h3>
+        <p className="muted">نسخة كل 10 دقائق تلقائياً أثناء العمل + نسخة عند غلق البرنامج — يحتفظ بآخر 24 ساعة + 30 يوماً.</p>
+        <p className="row-between backup-status">
+          <span>آخر نسخة: <b className="gold">{lastBackupLabel}</b></span>
+          <button className="btn btn-sm btn-ghost" onClick={refreshBackups}>تحديث</button>
+        </p>
+        <div className="modal-actions" style={{ justifyContent: 'flex-start' }}>
+          <button className="btn btn-primary" disabled={backupBusy} onClick={backupNow}>
+            {backupBusy ? 'جارٍ النسخ…' : 'نسخة احتياطية الآن'}
+          </button>
+          <button className="btn" onClick={exportBackup}>تصدير لفلاشة USB…</button>
+          <button className="btn" onClick={importBackup}>استعادة من ملف…</button>
+          <button className="btn btn-ghost" onClick={() => api.openBackupsFolder()}>فتح مجلد النسخ</button>
+        </div>
+        {backupList.length > 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>النسخة</th><th>الحجم</th><th></th></tr></thead>
+              <tbody>
+                {backupList.map((f) => (
+                  <tr key={f.name}>
+                    <td className="mono">{new Date(f.at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td>{Math.round(f.size / 1024)} ك.ب</td>
+                    <td>
+                      <button className="btn btn-sm" onClick={() => restoreFile(f)}>استعادة</button>
+                      <button className="btn btn-sm btn-ghost" onClick={() => api.backupExport(f.path)}>تصدير</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

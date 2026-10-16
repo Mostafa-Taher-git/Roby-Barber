@@ -98,6 +98,11 @@ export interface LicenseState {
 export type WaKind = 'ticket' | 'receipt' | 'reminder' | 'campaign' | 'custom';
 export interface WaShareResult { url: string; text: string; label: string; to: string; }
 
+// Phase 7 — Backup
+export interface BackupInfo { name: string; path: string; size: number; at: string; }
+export interface BackupStatus { last: BackupInfo | null; count: number; dir: string; }
+export interface RestoreResult { ok: boolean; canceled?: boolean; error?: string; }
+
 export interface RobyApi {
   overview(): Promise<{ todaySales: number; appointments: number; waiting: number; criticalStock: number; staff: number; lastBackup: string | null }>;
   chairs(): Promise<Chair[]>;
@@ -151,6 +156,14 @@ export interface RobyApi {
   activate(key: string): Promise<LicenseState>;
 
   waShare(input: { kind: WaKind; phone: string; vars?: Record<string, string | number>; text?: string }): Promise<WaShareResult>;
+
+  backupNow(): Promise<BackupInfo>;
+  backupList(): Promise<BackupInfo[]>;
+  backupStatus(): Promise<BackupStatus>;
+  openBackupsFolder(): Promise<{ ok: boolean }>;
+  backupExport(file?: string): Promise<{ ok: boolean; canceled?: boolean; path?: string }>;
+  backupImport(): Promise<RestoreResult>;
+  restoreBackup(file: string): Promise<RestoreResult>;
 }
 
 export interface RobyBridge {
