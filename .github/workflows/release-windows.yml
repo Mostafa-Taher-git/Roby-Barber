@@ -1,3 +1,5 @@
+# PENDING — move to .github/workflows/release-windows.yml once the PAT has the "Workflows" scope.
+# (Pushing any change under .github/workflows requires that scope; the token used could not.)
 name: release-windows
 
 on:
@@ -8,29 +10,47 @@ on:
 jobs:
   build-win:
     runs-on: windows-latest
+    env:
+      ROBY_LOG_DIR: ${{ github.workspace }}\logs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install prototype renderer
+
+      # Renderer (React + offline Cairo font)
+      - name: Install renderer deps
         run: npm install
-        working-directory: apps-prototype
+        working-directory: apps-desktop/src-renderer
       - name: Build renderer
         run: npm run build
-        working-directory: apps-prototype
+        working-directory: apps-desktop/src-renderer
+
+      # Main process + native SQLite
       - name: Install desktop deps
         run: npm install
+        working-directory: apps-desktop
+      # One ABI everywhere: native module matches Electron, so packaged app + tests agree
+      - name: Rebuild better-sqlite3 for Electron ABI
+        run: npm run rebuild:native
         working-directory: apps-desktop
       - name: Build main process
         run: npm run build:main
         working-directory: apps-desktop
-      - name: Seed check (counts only, no commit)
+
+      # Phase 2+3 gate: queue state machine + money math must pass before any release build
+      - name: Smoke tests (Phase 2 + 3)
+        run: npm run smoke
+        working-directory: apps-desktop
+      - name: Seed check (counts only)
         run: npm run seed
         working-directory: apps-desktop
-      - name: Build NSIS installer (Windows x64)
+
+      # Package Windows x64 installer
+      - name: Build NSIS installer
         run: npx electron-builder --win nsis --x64 --publish never
         working-directory: apps-desktop
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
