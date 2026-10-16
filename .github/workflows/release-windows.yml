@@ -1,5 +1,3 @@
-# PENDING — move to .github/workflows/release-windows.yml once the PAT has the "Workflows" scope.
-# (Pushing any change under .github/workflows requires that scope; the token used could not.)
 name: release-windows
 
 on:

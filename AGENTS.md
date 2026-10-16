@@ -67,9 +67,9 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Workflow: `.github/workflows/release-windows.yml`. It runs renderer build → main build → **smoke gate** → seed check → NSIS installer.
+Workflow: `.github/workflows/release-windows.yml`. It runs renderer build → main build → **smoke gate** (phases 2–7) → seed check → NSIS installer.
 
-NOTE: the in-repo workflow file is stale (points at the old `apps-prototype` path). The updated version is ready locally but was blocked by the PAT missing the **Workflows** scope — push it before the first release tag (see "The ABI rule": smoke/seed now self-rebuild the native module, so CI stays correct either way).
+NOTE: pushing changes under `.github/workflows/` requires a token with the **workflow** scope. The `github_pat_...` deploy token lacks it — use the `gh` CLI token instead (`gh auth token`, which carries `repo`+`workflow`).
 
 ## Windows-only
 

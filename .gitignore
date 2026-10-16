@@ -27,7 +27,6 @@ roby.seed.db
 *.blockmap
 *.yml
 !/.github/workflows/*.yml
-!/release-windows.workflow.yml
 out/
 
 # Runtime userdata (logs, backups, generated licenses)
@@ -44,7 +43,7 @@ Thumbs.db
 *.log
 .kilo/
 
-# License keys — RSA material must never enter the repo (owner keeps private.pem outside, public key is embedded in publicKey.ts)
+# License keys ï¿½ RSA material must never enter the repo (owner keeps private.pem outside, public key is embedded in publicKey.ts)
 *.pem
 *.key
 RobyBarber-License-Keys/
