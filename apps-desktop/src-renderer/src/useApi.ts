@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import {
   PAY_LABELS, type Advance, type CheckoutInput, type Expense, type ExpenseInput, type Financials,
-  type Offer, type PayrollSummary, type Receipt, type RobyApi, type Salon, type Service, type ServiceInput,
+  type LicenseState, type Offer, type PayrollSummary, type Receipt, type RobyApi, type Salon, type Service, type ServiceInput,
   type StaffFull, type StockItem, type StockLevels, type StockPageData, type Template, type ZReport,
 } from './api';
 import * as seed from './data/seed';
@@ -66,6 +66,9 @@ function electronApi(invoke: (channel: string, ...args: unknown[]) => Promise<un
     saveStock: (input) => call('save-stock', input),
     deleteStock: (id) => call('delete-stock', id),
     restock: (id, qty) => call('restock', id, qty),
+
+    licenseState: () => call('license-state'),
+    activate: (key) => call('activate', key),
   };
 }
 
@@ -303,6 +306,12 @@ function fallbackApi(): RobyApi {
       row.qty += Math.round(qty);
       return { id, name: row.name, added: Math.round(qty), qty: row.qty };
     },
+
+    // Preview is always "active" — the lock/trial flow only exists in the real app.
+    async licenseState(): Promise<LicenseState> {
+      return { status: 'active', mid: 'MID-0000-0000', daysLeft: null, activatedAt: null, reason: null, ownerWhatsApp: '201000000000' };
+    },
+    async activate(): Promise<LicenseState> { return this.licenseState(); },
   };
 }
 

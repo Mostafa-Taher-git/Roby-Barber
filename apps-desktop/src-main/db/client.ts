@@ -53,4 +53,10 @@ export function runMigrations(database: BetterSQLite3Database) {
     database.run(`ALTER TABLE inventory ADD COLUMN deleted_at TEXT`);
     log.info('migration: inventory.deleted_at added');
   }
+  // Phase 5: licenses gained `tampered_at` (clock-rollback detection is sticky).
+  const licCols = database.all('PRAGMA table_info(licenses)') as { name: string }[];
+  if (!licCols.some((c) => c.name === 'tampered_at')) {
+    database.run(`ALTER TABLE licenses ADD COLUMN tampered_at TEXT`);
+    log.info('migration: licenses.tampered_at added');
+  }
 }

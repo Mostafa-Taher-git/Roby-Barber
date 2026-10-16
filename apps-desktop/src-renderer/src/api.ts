@@ -83,6 +83,17 @@ export interface StockPageData { items: StockItem[]; levels: StockLevels; }
 export interface StockInput { id?: string; name: string; type: string; cost: number; price: number; qty: number; minQty: number; }
 export interface RestockResult { id: string; name: string; added: number; qty: number; }
 
+// Phase 5 — Licensing
+export type LicenseStatus = 'trial' | 'active' | 'locked' | 'expired';
+export interface LicenseState {
+  status: LicenseStatus;
+  mid: string;
+  daysLeft: number | null;
+  activatedAt: string | null;
+  reason: 'trial-expired' | 'clock-rollback' | 'transferred' | 'key-invalid' | 'blocked' | null;
+  ownerWhatsApp: string;
+}
+
 export interface RobyApi {
   overview(): Promise<{ todaySales: number; appointments: number; waiting: number; criticalStock: number; staff: number; lastBackup: string | null }>;
   chairs(): Promise<Chair[]>;
@@ -131,10 +142,14 @@ export interface RobyApi {
   saveStock(input: StockInput): Promise<StockItem>;
   deleteStock(id: string): Promise<{ id: string; name: string }>;
   restock(id: string, qty: number): Promise<RestockResult>;
+
+  licenseState(): Promise<LicenseState>;
+  activate(key: string): Promise<LicenseState>;
 }
 
 export interface RobyBridge {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+  onLicenseChanged?(cb: () => void): void;
   version: string;
   phase: number;
 }

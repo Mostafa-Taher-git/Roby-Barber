@@ -128,6 +128,7 @@ export const licenses = sqliteTable('licenses', {
   activatedAt: text('activated_at'),
   trialStartedAt: text('trial_started_at').notNull(),
   lastSeen: text('last_seen').notNull(),
+  tamperedAt: text('tampered_at'),
 });
 
 export const templates = sqliteTable('templates', {

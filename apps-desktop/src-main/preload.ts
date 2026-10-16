@@ -13,6 +13,7 @@ const channels = [
   'offers', 'save-offer', 'delete-offer',
   'staff-roster', 'payroll', 'save-staff', 'delete-staff', 'add-advance', 'delete-advance', 'pay-staff',
   'inventory', 'save-stock', 'delete-stock', 'restock',
+  'license-state', 'activate',
 ] as const;
 
 contextBridge.exposeInMainWorld('roby', {
@@ -22,6 +23,9 @@ contextBridge.exposeInMainWorld('roby', {
     }
     return ipcRenderer.invoke(`roby:${channel}`, ...args);
   },
+  onLicenseChanged: (cb: () => void) => {
+    ipcRenderer.on('roby:license-changed', () => cb());
+  },
   version: '0.1.0',
-  phase: 4,
+  phase: 5,
 });

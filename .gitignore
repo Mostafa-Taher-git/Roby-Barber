@@ -43,3 +43,8 @@ Thumbs.db
 .idea/
 *.log
 .kilo/
+
+# License keys — RSA material must never enter the repo (owner keeps private.pem outside, public key is embedded in publicKey.ts)
+*.pem
+*.key
+RobyBarber-License-Keys/

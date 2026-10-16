@@ -13,6 +13,9 @@ import * as payroll from '../packages/payroll';
 import * as payrollCompute from '../packages/payroll/compute';
 import * as stock from '../packages/stock';
 import * as stockLevels from '../packages/stock/levels';
+import * as license from '../packages/license';
+import * as key from '../packages/license/key';
+import { machineId } from '../packages/license/machineId';
 
 export function build(file: string) {
   const sqlite = new Database(file);
@@ -70,5 +73,31 @@ export function build(file: string) {
     restock: (id: string, qty: number) => stock.restockItem(db, id, qty),
     stockLevels: stockLevels.stockLevels,
     isCritical: stockLevels.isCritical,
+
+    licenseState: (publicKeyPem: string, mid?: string) => license.licenseState(db, publicKeyPem, mid),
+    activate: (keyStr: string, publicKeyPem: string, mid?: string) => license.activateLicense(db, keyStr, publicKeyPem, mid),
+    licenseRow: (mid: string) =>
+      (db as unknown as { $client: { prepare: (sql: string) => { get: (m: string) => unknown } } }).$client
+        .prepare('SELECT machine_id, key, activated_at, trial_started_at, last_seen, tampered_at FROM licenses WHERE machine_id = ?')
+        .get(mid),
+    setLicenseRow: (mid: string, patch: { trialStartedAt?: string; lastSeen?: string; activatedAt?: string | null; key?: string; tamperedAt?: string | null }) => {
+      const sets: string[] = [];
+      const vals: unknown[] = [];
+      if (patch.trialStartedAt !== undefined) { sets.push('trial_started_at = ?'); vals.push(patch.trialStartedAt); }
+      if (patch.lastSeen !== undefined) { sets.push('last_seen = ?'); vals.push(patch.lastSeen); }
+      if (patch.activatedAt !== undefined) { sets.push('activated_at = ?'); vals.push(patch.activatedAt); }
+      if (patch.key !== undefined) { sets.push('key = ?'); vals.push(patch.key); }
+      if (patch.tamperedAt !== undefined) { sets.push('tampered_at = ?'); vals.push(patch.tamperedAt); }
+      (db as unknown as { $client: { prepare: (sql: string) => { run: (...a: unknown[]) => unknown } } }).$client
+        .prepare(`UPDATE licenses SET ${sets.join(', ')} WHERE machine_id = ?`).run(...vals, mid);
+    },
+    decodeLicenseKey: key.decodeLicenseKey,
+    verifyLicenseKey: key.verifyLicenseKey,
+    reasonAr: key.reasonAr,
+    buildPayload: key.buildPayload,
+    encodeLicenseKey: key.encodeLicenseKey,
+    payloadBytes: key.payloadBytes,
+    machineId,
+    trialDays: license.TRIAL_DAYS,
   };
 }

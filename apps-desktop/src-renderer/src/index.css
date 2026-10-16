@@ -256,3 +256,24 @@ select { font-family: inherit; }
 .bar { height: 8px; background: rgba(148, 163, 184, 0.18); border-radius: 6px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--gold); border-radius: 6px; }
 .bar-fill.danger { background: var(--danger); }
+
+/* Phase 5 — license lock screen */
+.lock-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-app); padding: 20px; z-index: 60; }
+.lock-card { width: min(520px, 94vw); background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+.lock-head { display: flex; align-items: center; gap: 14px; }
+.lock-logo { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); }
+.lock-logo-fallback { width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: var(--gold-soft); border: 2px solid var(--gold); }
+.lock-title { font-size: 1.15rem; }
+.lock-sub { color: var(--muted); font-size: 0.82rem; }
+.lock-status { font-weight: 800; border-radius: 10px; padding: 10px 14px; margin: 0; }
+.lock-status.ok { color: var(--ok); background: rgba(16, 185, 129, 0.12); }
+.lock-status.warn { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
+.lock-reason { color: var(--muted); font-size: 0.9rem; line-height: 1.7; margin: 0; }
+.mid-box { background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.mid-code { font-size: 1.5rem; letter-spacing: 2px; font-family: Consolas, monospace; color: var(--gold); }
+.mid-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.lock-key-label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.lock-key-label textarea { font-family: Consolas, monospace; font-size: 0.82rem; }
+.lock-err { color: var(--danger); font-size: 0.9rem; margin: 0; }
+.lock-foot { color: var(--muted); font-size: 0.78rem; text-align: center; margin: 0; }
+.trial-chip { border: 1px solid var(--gold) !important; color: var(--gold) !important; }

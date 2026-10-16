@@ -1,8 +1,9 @@
 import { useApi } from './useApi';
 import { useCallback, useEffect, useState } from 'react';
-import type { Appt, Chair, Customer, Offer, PayrollSummary, Salon, Service, StaffMember, StockPageData } from './api';
+import type { Appt, Chair, Customer, LicenseState, Offer, PayrollSummary, Salon, Service, StaffMember, StockPageData } from './api';
 import { Icon, type IconName } from './Icon';
 import { ToastHost, useToast } from './components/Toast';
+import { LockScreen } from './components/LockScreen';
 import { PosPage, type PosPrefill } from './pages/PosPage';
 import { CashboxPage } from './pages/CashboxPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -52,6 +53,8 @@ export default function App() {
   const [feed, setFeed] = useState<{ text: string; time: string }[]>([]);
   const [payrollNow, setPayrollNow] = useState<PayrollSummary | null>(null);
   const [stockData, setStockData] = useState<StockPageData | null>(null);
+  const [license, setLicense] = useState<LicenseState | null>(null);
+  const [activateOpen, setActivateOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const [s, a, c, f, o, p, st] = await Promise.all([
@@ -73,11 +76,12 @@ export default function App() {
     let alive = true;
     (async () => {
       try {
-        const [svc, st, sl] = await Promise.all([api.services(), api.staff(), api.salon()]);
+        const [svc, st, sl, lic] = await Promise.all([api.services(), api.staff(), api.salon(), api.licenseState()]);
         if (!alive) return;
         setServices(svc);
         setStaff(st);
         setSalon(sl);
+        setLicense(lic);
         await refresh();
         await searchCustomers('');
         if (alive) setReady(true);
@@ -87,6 +91,13 @@ export default function App() {
     })();
     return () => { alive = false; };
   }, [api, refresh, searchCustomers, toast]);
+
+  // Main pushes this on the 24h re-validation (e.g. trial ended while the app stayed open).
+  useEffect(() => {
+    window.roby?.onLicenseChanged?.(() => {
+      api.licenseState().then(setLicense).catch(() => {});
+    });
+  }, [api]);
 
   const seat = async (id: string) => {
     try { await api.seatBooking(id); } catch (e) { toast('error', (e as Error).message); }
@@ -108,6 +119,18 @@ export default function App() {
   const waiting = appts.filter((a) => a.status === 'waiting');
   const visible = appts.filter((a) => filter === 'all' || a.status === filter);
 
+  if (license && (license.status === 'locked' || license.status === 'expired')) {
+    return (
+      <div data-theme={theme}>
+        <LockScreen
+          api={api} state={license} salon={salon}
+          onActivated={(s) => { setLicense(s); toast('success', 'تم تفعيل النسخة مدى الحياة ✓'); }}
+        />
+        <ToastHost toasts={toasts} />
+      </div>
+    );
+  }
+
   return (
     <div data-theme={theme}>
       <header className="topbar">
@@ -124,6 +147,11 @@ export default function App() {
             : <span className="badge warn">تحميل…</span>}
         </div>
         <div className="topbar-actions">
+          {license?.status === 'trial' && (
+            <button className="btn btn-ghost trial-chip" onClick={() => setActivateOpen(true)}>
+              ⏳ تجريبي — باقي {license.daysLeft} أيام · فعّل الآن
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => setBooking(true)}>
             <Icon name="plus" /> حجز زبون جديد
           </button>
@@ -381,6 +409,14 @@ export default function App() {
             toast('success', 'تم تسجيل الحجز بنجاح');
             refresh();
           }}
+        />
+      )}
+
+      {activateOpen && license && (
+        <LockScreen
+          api={api} state={license} salon={salon}
+          onClose={() => setActivateOpen(false)}
+          onActivated={(s) => { setLicense(s); setActivateOpen(false); toast('success', 'تم تفعيل النسخة مدى الحياة ✓'); }}
         />
       )}
 

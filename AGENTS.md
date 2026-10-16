@@ -36,13 +36,13 @@ npm run rebuild:native        # better-sqlite3 -> Electron ABI (REQUIRED, see be
 
 ```powershell
 cd apps-desktop
-npm run smoke      # queue state machine + money flow tests against real SQLite (13 + 45 checks, no GUI)
+npm run smoke      # queue + money + payroll/stock + license tests against real SQLite (no GUI)
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 120/120 PASS (Phase 2 + 3 + 4 gate: queue 13, money 45, payroll/stock 62).
+Current status: `smoke` = 162/162 PASS (gate: queue 13, money 45, payroll/stock 62, license 42).
 
-Headless UI self-check (verifies the renderer actually boots with live DB data):
+Headless UI self-check (verifies the renderer actually boots with live DB data — or shows the license lock screen):
 
 ```powershell
 cd apps-desktop
@@ -78,3 +78,7 @@ NSIS installer targets Windows 10/11 x64. Unsigned builds show a SmartScreen war
 ## Money rules
 
 All money math lives in pure functions (`subtotal - discount + tip`). UI never computes totals. DB is SQLite in `%APPDATA%\roby-barber-desktop\roby.db` (WAL mode), backups every 10 minutes.
+
+## Licensing (Phase 5)
+
+Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button). Owner tooling in `tools/license-gen/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.

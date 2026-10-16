@@ -9,6 +9,8 @@ import { listExpenses, addExpense, deleteExpense, financials, zReport } from '..
 import { getSalon, saveSalon, saveLogo, resetLogo, listTemplates, saveTemplates, listOffers, saveOffer, deleteOffer } from '../packages/settings';
 import { listStaffFull, staffPayroll, saveStaff, deleteStaff, addAdvance, deleteAdvance, payStaff } from '../packages/payroll';
 import { inventoryPage, saveStockItem, deleteStockItem, restockItem } from '../packages/stock';
+import { licenseState, activateLicense } from '../packages/license';
+import { PUBLIC_KEY_PEM } from '../packages/license/publicKey';
 import { log } from '../logger';
 
 const logosDir = () => path.join(app.getPath('userData'), 'logos');
@@ -127,6 +129,14 @@ const handlers: Record<string, Handler> = {
     const row = restockItem(getDb(), id as string, Number(qty));
     logActivity(getDb(), `توريد مخزن: ${row.name} +${row.added} قطعة (الكمية الآن ${row.qty})`);
     return row;
+  },
+
+  // Phase 5 — Licensing
+  'license-state': () => licenseState(getDb(), PUBLIC_KEY_PEM),
+  'activate': ([key]) => {
+    const state = activateLicense(getDb(), key as string, PUBLIC_KEY_PEM);
+    logActivity(getDb(), `تم تفعيل النسخة مدى الحياة على هذا الجهاز (${state.mid})`);
+    return state;
   },
 };
 
