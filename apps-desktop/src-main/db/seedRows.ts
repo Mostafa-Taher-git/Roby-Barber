@@ -54,10 +54,21 @@ export const SEED_ROWS: SeedRow[] = [
     ['CUST-304', 'كريم محمود يونس', '01511223344', 8, 350, 'كابتن روبي باربر', 'اليوم', 1],
     ['CUST-305', 'أحمد علاء عبد القادر', '01299887766', 4, 80, 'الأسطى أنور عسران', 'منذ 3 أسابيع', 0],
   ]},
-  { table: 'expenses', cols: 'no, time, title, cat, person, method, amount', rows: [
-    ['EXP-101', '10:30 ص', 'بوفيه وشاي وسكر وقهوة', 'بوفيه وضيافة', 'كابتن روبي', 'كاش من الدرج', 180],
-    ['EXP-102', '11:45 ص', 'كحول ومطهرات ومناديل ورق', 'نظافة ومطهرات', 'الأسطى أنور', 'كاش من الدرج', 220],
-    ['EXP-103', '01:15 م', 'شحن راوتر وكاميرات مراقبة', 'فواتير وكهرباء', 'كابتن روبي', 'محفظة كاش', 280],
+  { table: 'expenses', cols: 'no, at, time, title, cat, person, method, amount', rows: [
+    ['EXP-101', '__TODAY__', '10:30 ص', 'بوفيه وشاي وسكر وقهوة', 'بوفيه وضيافة', 'كابتن روبي', 'كاش من الدرج', 180],
+    ['EXP-102', '__TODAY__', '11:45 ص', 'كحول ومطهرات ومناديل ورق', 'نظافة ومطهرات', 'الأسطى أنور', 'كاش من الدرج', 220],
+    ['EXP-103', '__TODAY__', '01:15 م', 'شحن راوتر وكاميرات مراقبة', 'فواتير وكهرباء', 'كابتن روبي', 'محفظة كاش', 280],
+  ]},
+  { table: 'templates', cols: 'id, kind, body_ar', rows: [
+    ['tpl_ticket', 'ticket', 'أهلاً {name} 👋 تم تسجيل حجزك في {salon} الساعة {time}. نتشرف بخدمتك!'],
+    ['tpl_receipt', 'receipt', 'شكراً لزيارتك {salon} 🌟 فاتورتك {receipt} بمبلغ {total} ج.م. في انتظارك دائماً!'],
+    ['tpl_reminder', 'reminder', 'وحشتنا يا {name} ✂️ عندك {points} نقطة ولاء في {salon} — استبدلها في زيارتك القادمة.'],
+    ['tpl_campaign', 'campaign', 'عرض خاص في {salon} 🎉 خصم على كومبو الشياكة (شعر + لحية) هذا الأسبوع. اسأل عنه!'],
+  ]},
+  { table: 'offers', cols: 'id, title, desc_ar, price, active', rows: [
+    ['offer_1', 'خصم 20% على كومبو الشياكة', 'شعر + لحية كاملة بسعر مخفض أيام الأحد والثلاثاء', 136, 1],
+    ['offer_2', 'باقة العريس الملكية 1000 ج.م', 'كل خدمات العريس (حلاقة + بشرة + باديكير) بدل 1200', 1000, 1],
+    ['offer_3', 'واكس + زيت لحية بـ 250 ج.م', 'عرض منتجات: واكس مات احترافي + زيت روزماري', 250, 0],
   ]},
 ];
 
@@ -71,16 +82,31 @@ function asClient(db: unknown): RawSqlite {
   return db as RawSqlite;
 }
 
+const TODAY = '__TODAY__';
+
 export function applySeed(db: unknown): Record<string, number> {
   const client = asClient(db);
   const result: Record<string, number> = {};
   for (const { table, cols, rows } of SEED_ROWS) {
     const placeholders = rows[0].map(() => '?').join(',');
     const stmt = client.prepare(`INSERT OR IGNORE INTO ${table} (${cols}) VALUES (${placeholders})`);
-    for (const r of rows) stmt.run(...r);
+    for (const r of rows) stmt.run(...r.map((v) => (v === TODAY ? new Date().toISOString() : v)));
     result[table] = rows.length;
   }
   return result;
+}
+
+/** For an existing DB that predates a table: seed it only when empty (never resurrect user-deleted rows). */
+export function seedTableIfEmpty(db: unknown, table: string): boolean {
+  const client = asClient(db);
+  const count = (client.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c;
+  if (count > 0) return false;
+  const def = SEED_ROWS.find((r) => r.table === table);
+  if (!def) return false;
+  const placeholders = def.rows[0].map(() => '?').join(',');
+  const stmt = client.prepare(`INSERT OR IGNORE INTO ${table} (${def.cols}) VALUES (${placeholders})`);
+  for (const r of def.rows) stmt.run(...r.map((v) => (v === TODAY ? new Date().toISOString() : v)));
+  return true;
 }
 
 export function isFreshDb(db: unknown): boolean {

@@ -29,5 +29,23 @@
   "allowScripts": {
     "better-sqlite3@11.10.0": true,
     "electron@33.4.11": true
+  },
+  "build": {
+    "appId": "com.robybarber.desktop",
+    "productName": "Roby Barber",
+    "files": [
+      "dist-main/**",
+      "src-renderer/dist/**",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "RobyBarber-Setup-${version}.exe",
+      "shortcutName": "روبي باربر"
+    }
   }
 }

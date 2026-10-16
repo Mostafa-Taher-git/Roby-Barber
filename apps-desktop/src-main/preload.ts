@@ -4,7 +4,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 const channels = [
   'overview', 'chairs', 'appointments', 'waiting-queue',
   'create-booking', 'seat-booking', 'finish-chair', 'call-next',
-  'services', 'customers', 'log-activity', 'activity',
+  'services', 'staff', 'customers', 'log-activity', 'activity',
+  'checkout', 'sales',
+  'financials', 'expenses', 'add-expense', 'delete-expense', 'z-report',
+  'salon', 'save-salon', 'save-logo', 'reset-logo',
+  'save-service', 'delete-service',
+  'templates', 'save-templates',
+  'offers', 'save-offer', 'delete-offer',
 ] as const;
 
 contextBridge.exposeInMainWorld('roby', {
@@ -12,8 +18,8 @@ contextBridge.exposeInMainWorld('roby', {
     if (!(channels as readonly string[]).includes(channel)) {
       return Promise.reject(new Error(`blocked channel: ${channel}`));
     }
-    return ipcRenderer.invoke(channel, ...args);
+    return ipcRenderer.invoke(`roby:${channel}`, ...args);
   },
   version: '0.1.0',
-  phase: 1,
+  phase: 3,
 });

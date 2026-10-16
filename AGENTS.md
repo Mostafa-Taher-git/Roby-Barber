@@ -36,11 +36,18 @@ npm run rebuild:native        # better-sqlite3 -> Electron ABI (REQUIRED, see be
 
 ```powershell
 cd apps-desktop
-npm run smoke      # queue state machine tests against real SQLite (13 checks, no GUI)
+npm run smoke      # queue state machine + money flow tests against real SQLite (13 + 45 checks, no GUI)
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 13/13 PASS (Phase 2 gate).
+Current status: `smoke` = 58/58 PASS (Phase 2 + 3 gate: queue 13, money 45).
+
+Headless UI self-check (verifies the renderer actually boots with live DB data):
+
+```powershell
+cd apps-desktop
+$env:ROBY_UI_CHECK="1"; npx electron .   # exit 0 + "ui check" line in %APPDATA%\roby-barber-desktop\logs\app.log
+```
 
 ## Run the app
 

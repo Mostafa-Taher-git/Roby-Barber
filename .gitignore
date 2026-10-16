@@ -27,6 +27,7 @@ roby.seed.db
 *.blockmap
 *.yml
 !/.github/workflows/*.yml
+!/release-windows.workflow.yml
 out/
 
 # Runtime userdata (logs, backups, generated licenses)

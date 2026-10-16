@@ -2,9 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { sql } from 'drizzle-orm';
 import Database from 'better-sqlite3';
 import { TABLES } from './tables';
-import { applySeed, isFreshDb } from './seedRows';
+import { applySeed, isFreshDb, seedTableIfEmpty } from './seedRows';
 import { log } from '../logger';
 
 let db: BetterSQLite3Database<Record<string, never>> | null = null;
@@ -28,10 +29,22 @@ export function getDb() {
   if (isFreshDb(raw)) {
     const counts = applySeed(raw);
     log.info('fresh db auto-seeded', counts);
+  } else {
+    // Existing DB from an older version: fill in tables added later, only if empty.
+    for (const table of ['templates', 'offers']) {
+      if (seedTableIfEmpty(raw, table)) log.info('seed backfilled', table);
+    }
   }
   return db;
 }
 
 export function runMigrations(database: BetterSQLite3Database) {
-  for (const sql of TABLES) database.run(sql);
+  for (const sqlDef of TABLES) database.run(sqlDef);
+  // Phase 3 v2: expenses gained `at` (ISO). Old DBs: add + backfill so today's financials see them.
+  const cols = database.all('PRAGMA table_info(expenses)') as { name: string }[];
+  if (!cols.some((c) => c.name === 'at')) {
+    database.run(`ALTER TABLE expenses ADD COLUMN at TEXT NOT NULL DEFAULT ''`);
+    database.run(sql`UPDATE expenses SET at = ${new Date().toISOString()} WHERE at = ''`);
+    log.info('migration: expenses.at added and backfilled');
+  }
 }

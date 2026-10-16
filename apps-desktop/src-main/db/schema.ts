@@ -79,6 +79,7 @@ export const customers = sqliteTable('customers', {
 
 export const expenses = sqliteTable('expenses', {
   no: text('no').primaryKey(),
+  at: text('at').notNull(), // ISO datetime — required for per-day financials/Z-report
   time: text('time').notNull(),
   title: text('title').notNull(),
   cat: text('cat').notNull(),
@@ -114,6 +115,14 @@ export const templates = sqliteTable('templates', {
   id: text('id').primaryKey(),
   kind: text('kind').notNull(), // ticket | receipt | reminder | campaign
   bodyAr: text('body_ar').notNull(),
+});
+
+export const offers = sqliteTable('offers', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  descAr: text('desc_ar').notNull(),
+  price: integer('price').notNull(),
+  active: integer('active').notNull(), // 1 = shows on overview
 });
 
 export const activityLog = sqliteTable('activity_log', {

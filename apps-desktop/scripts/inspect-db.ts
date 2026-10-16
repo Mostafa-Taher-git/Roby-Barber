@@ -20,3 +20,12 @@ for (const t of ['salon', 'staff', 'services', 'chairs', 'appointments', 'invent
 }
 const chairs = db.prepare("SELECT num, status FROM chairs ORDER BY num").all() as { num: number; status: string }[];
 console.log('chairs:', chairs.map((c) => `${c.num}=${c.status}`).join(' '));
+for (const t of ['templates', 'offers', 'sales']) {
+  const row = db.prepare(`SELECT COUNT(*) c FROM ${t}`).get() as { c: number } | undefined;
+  console.log(`${t}: ${row?.c ?? 'missing'}`);
+}
+const expAt = db.prepare("SELECT COUNT(*) c FROM expenses WHERE at <> ''").get() as { c: number };
+console.log(`expenses with at: ${expAt.c}`);
+
+db.close();
+process.exit(0);

@@ -38,5 +38,6 @@ function writeLine(level: string, args: unknown[]) {
 
 export const log = {
   info: (...args: unknown[]) => writeLine('INFO', args),
+  warn: (...args: unknown[]) => writeLine('WARN', args),
   error: (...args: unknown[]) => writeLine('ERROR', args),
 };

@@ -25,6 +25,11 @@ async function createWindow() {
   });
   win.on('unresponsive', () => log.error('window unresponsive'));
   win.webContents.on('render-process-gone', (_e, details) => log.error('renderer gone', details));
+  // Surface renderer errors in app.log (blank-window debugging, DESIGN doc §9)
+  win.webContents.on('console-message', (_e, level, message) => {
+    if (level >= 3) log.error('renderer console', message);
+    else if (level === 2) log.warn('renderer console', message);
+  });
 
   const devUrl = process.env.VITE_DEV_URL;
   if (devUrl) {
@@ -32,6 +37,21 @@ async function createWindow() {
   } else {
     // Packaged/CI renderer (built by src-renderer → dist)
     await win.loadFile(join(__dirname, '..', 'src-renderer', 'dist', 'index.html'));
+  }
+
+  // Headless UI self-check (used by boot verification: ROBY_UI_CHECK=1)
+  // Polls until the shell rendered AND live DB data arrived (badge "قاعدة البيانات متصلة").
+  if (process.env.ROBY_UI_CHECK) {
+    let probe: { shell?: boolean; nav?: number; ready?: boolean } = {};
+    for (let i = 0; i < 40; i++) {
+      probe = await win.webContents.executeJavaScript(
+        '({ shell: !!document.querySelector(".topbar") && !!document.querySelector(".sidenav"), nav: document.querySelectorAll(".sidenav button").length, ready: !!document.querySelector(".badge.ok") })',
+      );
+      if (probe.shell && probe.nav && probe.ready) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    log.info('ui check', probe);
+    app.exit(probe.shell && (probe.nav ?? 0) > 0 && probe.ready ? 0 : 2);
   }
 }
 

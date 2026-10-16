@@ -1,10 +1,48 @@
 import { and, eq, like, or } from 'drizzle-orm';
-import { customers, services, type BetterSQLiteDatabase } from '../db/schema';
+import { customers, services, staff, type BetterSQLiteDatabase } from '../db/schema';
 
 export function listServices(db: BetterSQLiteDatabase) {
-  return db.select().from(services).all().map((s) => ({
-    id: s.id, title: s.title, cat: s.cat, price: s.price, duration: s.duration, desc: s.desc,
-  }));
+  return db.select().from(services).all()
+    .filter((s) => !s.deletedAt)
+    .map((s) => ({
+      id: s.id, title: s.title, cat: s.cat, price: s.price, duration: s.duration, desc: s.desc,
+    }));
+}
+
+export function listStaff(db: BetterSQLiteDatabase) {
+  return db.select().from(staff).all()
+    .filter((s) => !s.deletedAt)
+    .map((s) => ({ id: s.id, name: s.nameAr, role: s.role }));
+}
+
+export interface ServiceInput {
+  id?: string; title: string; cat: string; price: number; duration: string; desc?: string | null;
+}
+
+export function saveService(db: BetterSQLiteDatabase, input: ServiceInput) {
+  const title = input.title.trim();
+  if (!title) throw new Error('اسم الخدمة مطلوب');
+  const price = Math.round(input.price);
+  if (!Number.isFinite(price) || price < 0) throw new Error('سعر الخدمة غير صحيح');
+  const duration = input.duration.trim() || '-';
+  const desc = input.desc?.trim() ?? null;
+  if (input.id) {
+    const row = db.select().from(services).where(eq(services.id, input.id)).get();
+    if (!row) throw new Error('الخدمة غير موجودة');
+    db.update(services).set({ title, cat: input.cat, price, duration, desc }).where(eq(services.id, input.id)).run();
+    return listServices(db).find((s) => s.id === input.id)!;
+  }
+  const id = `srv_${Date.now()}`;
+  db.insert(services).values({ id, title, cat: input.cat || 'hair', price, duration, desc }).run();
+  return listServices(db).find((s) => s.id === id)!;
+}
+
+/** Soft delete (DESIGN §1: destructive = soft-delete) — POS stops offering it, sales history keeps its name. */
+export function deleteService(db: BetterSQLiteDatabase, id: string) {
+  const row = db.select().from(services).where(eq(services.id, id)).get();
+  if (!row) throw new Error('الخدمة غير موجودة');
+  db.update(services).set({ deletedAt: new Date().toISOString() }).where(eq(services.id, id)).run();
+  return { id };
 }
 
 export interface CustomerRow {
