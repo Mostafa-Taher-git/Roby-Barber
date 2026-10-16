@@ -50,6 +50,39 @@ export interface Template { id: string; kind: string; bodyAr: string; }
 export interface Offer { id: string; title: string; descAr: string; price: number; active: number; }
 export interface ServiceInput { id?: string; title: string; cat: string; price: number; duration: string; desc?: string | null; }
 
+// Phase 4 — Staff & Payroll
+export interface StaffFull {
+  id: string; nameAr: string; role: string; commPct: number; salary: number;
+  photoPath: string | null; photoDataUrl?: string | null;
+}
+export interface Advance { id: string; staffId: string; amount: number; note: string; at: string; }
+export interface PayrollItem {
+  staffId: string; nameAr: string; role: string; commPct: number; salary: number;
+  photoPath: string | null; photoDataUrl?: string | null;
+  month: string; revenue: number; count: number; tips: number; commission: number;
+  advancesTotal: number; advancesList: Advance[];
+  net: number;
+  paid: { id: string; amount: number; at: string } | null;
+}
+export interface PayrollSummary {
+  month: string;
+  items: PayrollItem[];
+  totals: { salary: number; revenue: number; commission: number; tips: number; advances: number; net: number };
+}
+export interface StaffInput { id?: string; nameAr: string; role: string; commPct: number; salary: number; photoDataUrl?: string | null; }
+export interface PayrollPayment { id: string; staffId: string; amount: number; month: string; at: string; nameAr: string; }
+
+// Phase 4 — Stock
+export interface StockItem { id: string; name: string; type: string; cost: number; price: number; qty: number; minQty: number; }
+export interface StockLevels {
+  count: number; salonCount: number; retailCount: number; criticalCount: number;
+  costValue: number; retailValue: number;
+  criticalItems: { id: string; name: string; qty: number; minQty: number }[];
+}
+export interface StockPageData { items: StockItem[]; levels: StockLevels; }
+export interface StockInput { id?: string; name: string; type: string; cost: number; price: number; qty: number; minQty: number; }
+export interface RestockResult { id: string; name: string; added: number; qty: number; }
+
 export interface RobyApi {
   overview(): Promise<{ todaySales: number; appointments: number; waiting: number; criticalStock: number; staff: number; lastBackup: string | null }>;
   chairs(): Promise<Chair[]>;
@@ -85,6 +118,19 @@ export interface RobyApi {
   offers(onlyActive?: boolean): Promise<Offer[]>;
   saveOffer(input: Partial<Offer> & { title: string }): Promise<Offer>;
   deleteOffer(id: string): Promise<{ id: string }>;
+
+  staffRoster(): Promise<StaffFull[]>;
+  payroll(month?: string): Promise<PayrollSummary>;
+  saveStaff(input: StaffInput): Promise<StaffFull>;
+  deleteStaff(id: string): Promise<{ id: string; nameAr: string }>;
+  addAdvance(staffId: string, amount: number, note: string): Promise<Advance>;
+  deleteAdvance(id: string): Promise<{ id: string; staffId: string; amount: number }>;
+  payStaff(staffId: string, month: string): Promise<PayrollPayment>;
+
+  inventory(): Promise<StockPageData>;
+  saveStock(input: StockInput): Promise<StockItem>;
+  deleteStock(id: string): Promise<{ id: string; name: string }>;
+  restock(id: string, qty: number): Promise<RestockResult>;
 }
 
 export interface RobyBridge {

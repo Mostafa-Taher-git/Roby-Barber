@@ -64,6 +64,25 @@ export const inventory = sqliteTable('inventory', {
   price: integer('price').notNull(),
   qty: integer('qty').notNull(),
   minQty: integer('min_qty').notNull(),
+  deletedAt: text('deleted_at'),
+});
+
+// Staff payroll extras (Phase 4): advances taken during a month are deducted from that month's net pay;
+// payments are append-only (paid rows are never edited — a correction is a new advance/mistake fix, not history edit).
+export const staffAdvances = sqliteTable('staff_advances', {
+  id: text('id').primaryKey(),
+  staffId: text('staff_id').notNull(),
+  amount: integer('amount').notNull(),
+  note: text('note').notNull(),
+  at: text('at').notNull(),
+});
+
+export const staffPayments = sqliteTable('staff_payments', {
+  id: text('id').primaryKey(),
+  staffId: text('staff_id').notNull(),
+  amount: integer('amount').notNull(),
+  month: text('month').notNull(), // YYYY-MM
+  at: text('at').notNull(),
 });
 
 export const customers = sqliteTable('customers', {

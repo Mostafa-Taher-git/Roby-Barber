@@ -8,13 +8,13 @@ export function overview(db: BetterSQLiteDatabase) {
   const todaySales = salesRows.filter((s) => s.at.slice(0, 10) === today).reduce((sum, s) => sum + s.total, 0);
   const apptRows = db.select().from(appointments).all();
   const criticalStock = db.select().from(inventory).all()
-    .filter((i) => Number(i.qty) <= Number(i.minQty)).length;
+    .filter((i) => !i.deletedAt && Number(i.qty) <= Number(i.minQty)).length;
   return {
     todaySales,
     appointments: apptRows.length,
     waiting: apptRows.filter((a) => a.status === 'waiting').length,
     criticalStock,
-    staff: db.select().from(staff).all().length,
+    staff: db.select().from(staff).all().filter((s) => !s.deletedAt).length,
     lastBackup: null as string | null,
   };
 }

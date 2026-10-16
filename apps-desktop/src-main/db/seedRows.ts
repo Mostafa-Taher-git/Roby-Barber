@@ -12,6 +12,9 @@ export const SEED_ROWS: SeedRow[] = [
     ['roby', 'كابتن روبي باربر', 'الماستر باربر وصاحب الصالون', 10, 8000, null],
     ['ibrahim', 'الأسطى إبراهيم سعد', 'كوافير قصات حديثة وفيد', 25, 4500, null],
   ]},
+  { table: 'staff_advances', cols: 'id, staff_id, amount, note, at', rows: [
+    ['ADV-101', 'ahmed', 200, 'سلفة شخصية (تُخصم من مرتب الشهر)', '__TODAY__'],
+  ]},
   { table: 'services', cols: 'id, title, cat, price, duration, desc', rows: [
     ['srv_1', 'قص شعر استايل وفيد + سشوار', 'hair', 120, '35 دقيقة', 'قص وتدريج حديث مع غسيل وسشوار'],
     ['srv_2', 'تظبيط وتحديد دقن بالموس والخيط', 'beard', 70, '20 دقيقة', 'تحديد بموس شفرة ليزر + خيط'],

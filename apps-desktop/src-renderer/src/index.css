@@ -233,3 +233,26 @@ select { font-family: inherit; }
   .pos-layout { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
 }
+
+/* Phase 4 — staff & payroll */
+.row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.nav-count.danger { background: rgba(239, 68, 68, 0.18); color: var(--danger); }
+.staff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.staff-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.staff-top { display: flex; align-items: center; gap: 12px; }
+.staff-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
+.staff-photo.sm { width: 40px; height: 40px; }
+.staff-photo.fallback { display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; color: var(--gold); background: var(--gold-soft); }
+.staff-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.staff-stats > div { display: flex; flex-direction: column; font-size: 0.85rem; background: var(--bg-input); border-radius: 8px; padding: 6px 8px; gap: 2px; }
+.staff-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.slip-head { display: flex; align-items: center; gap: 10px; }
+.adv-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; }
+.upload-btn { cursor: pointer; }
+.alert-danger { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--danger); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-weight: 700; }
+.stock-bars { display: flex; flex-direction: column; gap: 10px; }
+.stock-bar-row { display: grid; grid-template-columns: 1fr 90px 36px; align-items: center; gap: 10px; font-size: 0.88rem; }
+.stock-bar-row .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { height: 8px; background: rgba(148, 163, 184, 0.18); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--gold); border-radius: 6px; }
+.bar-fill.danger { background: var(--danger); }

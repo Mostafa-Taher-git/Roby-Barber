@@ -20,7 +20,7 @@ for (const t of ['salon', 'staff', 'services', 'chairs', 'appointments', 'invent
 }
 const chairs = db.prepare("SELECT num, status FROM chairs ORDER BY num").all() as { num: number; status: string }[];
 console.log('chairs:', chairs.map((c) => `${c.num}=${c.status}`).join(' '));
-for (const t of ['templates', 'offers', 'sales']) {
+for (const t of ['templates', 'offers', 'sales', 'staff_advances', 'staff_payments']) {
   const row = db.prepare(`SELECT COUNT(*) c FROM ${t}`).get() as { c: number } | undefined;
   console.log(`${t}: ${row?.c ?? 'missing'}`);
 }

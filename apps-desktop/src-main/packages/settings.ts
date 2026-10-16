@@ -1,9 +1,8 @@
 // Settings domain — salon info, templates, offers, logo files. Validation lives here, UI only displays errors.
-import fs from 'node:fs';
-import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import { offers, salon, templates, type BetterSQLiteDatabase } from '../db/schema';
 import { log } from '../logger';
+import { readImageDataUrl, removeImage, saveImageDataUrl } from './images';
 
 export interface SalonRow {
   id: string; nameAr: string; address: string; phone: string;
@@ -17,17 +16,7 @@ function salonRow(db: BetterSQLiteDatabase): SalonRow | undefined {
 export function getSalon(db: BetterSQLiteDatabase, logosDir?: string) {
   const row = salonRow(db);
   if (!row) throw new Error('بيانات الصالون غير موجودة');
-  let logoDataUrl: string | null = null;
-  if (row.logoPath && logosDir) {
-    try {
-      const file = path.join(logosDir, path.basename(row.logoPath));
-      const buf = fs.readFileSync(file);
-      const ext = path.extname(file).toLowerCase();
-      const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
-      logoDataUrl = `data:${mime};base64,${buf.toString('base64')}`;
-    } catch { logoDataUrl = null; }
-  }
-  return { ...row, logoDataUrl };
+  return { ...row, logoDataUrl: readImageDataUrl(logosDir, row.logoPath) };
 }
 
 const PHONE_RE = /^01\d{9}$/;
@@ -51,24 +40,13 @@ export function saveSalon(db: BetterSQLiteDatabase, input: Partial<SalonRow>) {
   return getSalon(db);
 }
 
-const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-
 /** Persist an uploaded logo (data URL → file under userData/logos/) and point salon.logo_path at it. */
 export function saveLogo(db: BetterSQLiteDatabase, dataUrl: string, logosDir: string) {
-  const m = /^data:image\/(png|jpe?g|webp);base64,([\s\S]+)$/.exec(dataUrl);
-  if (!m) throw new Error('ملف الشعار يجب أن يكون صورة PNG أو JPG (حتى 2 ميجا)');
-  const ext = m[1] === 'png' ? '.png' : m[1] === 'webp' ? '.webp' : '.jpg';
-  const buf = Buffer.from(m[2], 'base64');
-  if (buf.length > LOGO_MAX_BYTES) throw new Error('حجم الشعار أكبر من 2 ميجا');
-  fs.mkdirSync(logosDir, { recursive: true });
-  const name = `logo-${Date.now()}${ext}`;
-  fs.writeFileSync(path.join(logosDir, name), buf);
+  const name = saveImageDataUrl(logosDir, 'logo', dataUrl);
   const row = salonRow(db);
   if (!row) throw new Error('بيانات الصالون غير موجودة');
   // Remove the previous logo file (if any) — DB stores only the current path
-  if (row.logoPath) {
-    try { fs.rmSync(path.join(logosDir, path.basename(row.logoPath)), { force: true }); } catch { /* stale file, ignore */ }
-  }
+  removeImage(logosDir, row.logoPath);
   db.update(salon).set({ logoPath: name }).where(eq(salon.id, row.id)).run();
   log.info('logo saved', name);
   return { logoPath: name };
@@ -77,9 +55,7 @@ export function saveLogo(db: BetterSQLiteDatabase, dataUrl: string, logosDir: st
 export function resetLogo(db: BetterSQLiteDatabase, logosDir: string) {
   const row = salonRow(db);
   if (!row) throw new Error('بيانات الصالون غير موجودة');
-  if (row.logoPath) {
-    try { fs.rmSync(path.join(logosDir, path.basename(row.logoPath)), { force: true }); } catch { /* already gone */ }
-  }
+  removeImage(logosDir, row.logoPath);
   db.update(salon).set({ logoPath: null }).where(eq(salon.id, row.id)).run();
   return { logoPath: null };
 }

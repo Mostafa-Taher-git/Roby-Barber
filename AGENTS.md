@@ -40,7 +40,7 @@ npm run smoke      # queue state machine + money flow tests against real SQLite 
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 58/58 PASS (Phase 2 + 3 gate: queue 13, money 45).
+Current status: `smoke` = 120/120 PASS (Phase 2 + 3 + 4 gate: queue 13, money 45, payroll/stock 62).
 
 Headless UI self-check (verifies the renderer actually boots with live DB data):
 

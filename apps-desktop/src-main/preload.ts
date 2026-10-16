@@ -11,6 +11,8 @@ const channels = [
   'save-service', 'delete-service',
   'templates', 'save-templates',
   'offers', 'save-offer', 'delete-offer',
+  'staff-roster', 'payroll', 'save-staff', 'delete-staff', 'add-advance', 'delete-advance', 'pay-staff',
+  'inventory', 'save-stock', 'delete-stock', 'restock',
 ] as const;
 
 contextBridge.exposeInMainWorld('roby', {
@@ -21,5 +23,5 @@ contextBridge.exposeInMainWorld('roby', {
     return ipcRenderer.invoke(`roby:${channel}`, ...args);
   },
   version: '0.1.0',
-  phase: 3,
+  phase: 4,
 });

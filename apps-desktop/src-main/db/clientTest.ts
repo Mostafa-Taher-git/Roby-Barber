@@ -9,6 +9,10 @@ import * as reports from '../packages/reports';
 import * as pos from '../packages/pos';
 import * as cashbox from '../packages/cashbox';
 import * as settings from '../packages/settings';
+import * as payroll from '../packages/payroll';
+import * as payrollCompute from '../packages/payroll/compute';
+import * as stock from '../packages/stock';
+import * as stockLevels from '../packages/stock/levels';
 
 export function build(file: string) {
   const sqlite = new Database(file);
@@ -48,5 +52,23 @@ export function build(file: string) {
     listOffers: (onlyActive?: boolean) => settings.listOffers(db, onlyActive),
     saveOffer: (input: Parameters<typeof settings.saveOffer>[1]) => settings.saveOffer(db, input),
     deleteOffer: (id: string) => settings.deleteOffer(db, id),
+
+    staffRoster: () => payroll.listStaffFull(db),
+    payroll: (month: string) => payroll.staffPayroll(db, month),
+    saveStaff: (input: Parameters<typeof payroll.saveStaff>[1]) => payroll.saveStaff(db, input),
+    deleteStaff: (id: string) => payroll.deleteStaff(db, id),
+    addAdvance: (staffId: string, amount: number, note = '') => payroll.addAdvance(db, staffId, amount, note),
+    deleteAdvance: (id: string) => payroll.deleteAdvance(db, id),
+    payStaff: (staffId: string, month: string) => payroll.payStaff(db, staffId, month),
+    computePayroll: payrollCompute.computePayroll,
+    aggregateSales: payrollCompute.aggregateSales,
+    monthKey: payrollCompute.monthKey,
+
+    inventory: () => stock.inventoryPage(db),
+    saveStock: (input: Parameters<typeof stock.saveStockItem>[1]) => stock.saveStockItem(db, input),
+    deleteStock: (id: string) => stock.deleteStockItem(db, id),
+    restock: (id: string, qty: number) => stock.restockItem(db, id, qty),
+    stockLevels: stockLevels.stockLevels,
+    isCritical: stockLevels.isCritical,
   };
 }

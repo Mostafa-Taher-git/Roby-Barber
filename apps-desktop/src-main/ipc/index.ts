@@ -7,9 +7,13 @@ import { overview, logActivity, activity } from '../packages/reports';
 import { checkout, recentSales } from '../packages/pos';
 import { listExpenses, addExpense, deleteExpense, financials, zReport } from '../packages/cashbox';
 import { getSalon, saveSalon, saveLogo, resetLogo, listTemplates, saveTemplates, listOffers, saveOffer, deleteOffer } from '../packages/settings';
+import { listStaffFull, staffPayroll, saveStaff, deleteStaff, addAdvance, deleteAdvance, payStaff } from '../packages/payroll';
+import { inventoryPage, saveStockItem, deleteStockItem, restockItem } from '../packages/stock';
 import { log } from '../logger';
 
 const logosDir = () => path.join(app.getPath('userData'), 'logos');
+const staffPhotosDir = () => path.join(app.getPath('userData'), 'staff');
+const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 type Handler = (args: unknown[]) => unknown;
 const handlers: Record<string, Handler> = {
@@ -77,6 +81,53 @@ const handlers: Record<string, Handler> = {
   'offers': ([onlyActive]) => listOffers(getDb(), Boolean(onlyActive)),
   'save-offer': ([input]) => saveOffer(getDb(), input as Parameters<typeof saveOffer>[1]),
   'delete-offer': ([id]) => deleteOffer(getDb(), id as string),
+
+  // Phase 4 — Staff & Payroll
+  'staff-roster': () => listStaffFull(getDb(), staffPhotosDir()),
+  'payroll': ([month]) => staffPayroll(getDb(), (month as string) || currentMonth(), staffPhotosDir()),
+  'save-staff': ([input]) => {
+    const row = saveStaff(getDb(), input as Parameters<typeof saveStaff>[1], staffPhotosDir());
+    logActivity(getDb(), `تم حفظ بيانات الأسطى ${row.nameAr} (عمولة ${row.commPct}% — راتب ${row.salary} ج.م)`);
+    return row;
+  },
+  'delete-staff': ([id]) => {
+    const row = deleteStaff(getDb(), id as string);
+    logActivity(getDb(), `تم حذف الأسطى ${row.nameAr} من الطاقم`);
+    return row;
+  },
+  'add-advance': ([staffId, amount, note]) => {
+    const adv = addAdvance(getDb(), staffId as string, Number(amount), (note as string) ?? '');
+    logActivity(getDb(), `سلفة ${adv.id}: ${adv.amount} ج.م للأسطى (${adv.note})`);
+    return adv;
+  },
+  'delete-advance': ([id]) => {
+    const adv = deleteAdvance(getDb(), id as string);
+    logActivity(getDb(), `تم حذف سلفة ${adv.id} (${adv.amount} ج.م)`);
+    return adv;
+  },
+  'pay-staff': ([staffId, month]) => {
+    const payment = payStaff(getDb(), staffId as string, (month as string) || currentMonth());
+    logActivity(getDb(), `تم صرف مرتب ${payment.nameAr} لشهر ${payment.month} بمبلغ ${payment.amount} ج.م`);
+    return payment;
+  },
+
+  // Phase 4 — Stock
+  'inventory': () => inventoryPage(getDb()),
+  'save-stock': ([input]) => {
+    const row = saveStockItem(getDb(), input as Parameters<typeof saveStockItem>[1]);
+    logActivity(getDb(), `تم حفظ صنف المخزن: ${row.name} (${row.qty} قطعة)`);
+    return row;
+  },
+  'delete-stock': ([id]) => {
+    const row = deleteStockItem(getDb(), id as string);
+    logActivity(getDb(), `تم حذف صنف المخزن: ${row.name}`);
+    return row;
+  },
+  'restock': ([id, qty]) => {
+    const row = restockItem(getDb(), id as string, Number(qty));
+    logActivity(getDb(), `توريد مخزن: ${row.name} +${row.added} قطعة (الكمية الآن ${row.qty})`);
+    return row;
+  },
 };
 
 export function setupIpc() {

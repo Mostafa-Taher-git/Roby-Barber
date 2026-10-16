@@ -47,4 +47,10 @@ export function runMigrations(database: BetterSQLite3Database) {
     database.run(sql`UPDATE expenses SET at = ${new Date().toISOString()} WHERE at = ''`);
     log.info('migration: expenses.at added and backfilled');
   }
+  // Phase 4: inventory gained `deleted_at` (soft delete, per DESIGN §5 "all deletes are soft").
+  const invCols = database.all('PRAGMA table_info(inventory)') as { name: string }[];
+  if (!invCols.some((c) => c.name === 'deleted_at')) {
+    database.run(`ALTER TABLE inventory ADD COLUMN deleted_at TEXT`);
+    log.info('migration: inventory.deleted_at added');
+  }
 }

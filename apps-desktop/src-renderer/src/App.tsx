@@ -1,21 +1,25 @@
 import { useApi } from './useApi';
 import { useCallback, useEffect, useState } from 'react';
-import type { Appt, Chair, Customer, Offer, Salon, Service, StaffMember } from './api';
+import type { Appt, Chair, Customer, Offer, PayrollSummary, Salon, Service, StaffMember, StockPageData } from './api';
 import { Icon, type IconName } from './Icon';
 import { ToastHost, useToast } from './components/Toast';
 import { PosPage, type PosPrefill } from './pages/PosPage';
 import { CashboxPage } from './pages/CashboxPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { StaffPage } from './pages/StaffPage';
+import { StockPage } from './pages/StockPage';
 import { egp } from './format';
 
 type Filter = 'all' | 'waiting' | 'in_chair' | 'done';
-type Page = 'overview' | 'chairs' | 'pos' | 'cashbox' | 'customers' | 'settings';
+type Page = 'overview' | 'chairs' | 'pos' | 'cashbox' | 'staff' | 'stock' | 'customers' | 'settings';
 
 const NAV: { key: Page; label: string; icon: IconName }[] = [
   { key: 'overview', label: 'نظرة عامة', icon: 'home' },
   { key: 'chairs', label: 'الكراسي والحجوزات', icon: 'chair' },
   { key: 'pos', label: 'الكاشير (خدمات)', icon: 'receipt' },
   { key: 'cashbox', label: 'الخزينة والحسابات', icon: 'wallet' },
+  { key: 'staff', label: 'الطاقم والرواتب', icon: 'user' },
+  { key: 'stock', label: 'مخزن الصالون', icon: 'box' },
   { key: 'customers', label: 'الزبائن', icon: 'users' },
   { key: 'settings', label: 'الإعدادات', icon: 'settings' },
 ];
@@ -46,12 +50,15 @@ export default function App() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [stats, setStats] = useState({ todaySales: 0, appointments: 0, waiting: 0, criticalStock: 0, staff: 0 });
   const [feed, setFeed] = useState<{ text: string; time: string }[]>([]);
+  const [payrollNow, setPayrollNow] = useState<PayrollSummary | null>(null);
+  const [stockData, setStockData] = useState<StockPageData | null>(null);
 
   const refresh = useCallback(async () => {
-    const [s, a, c, f, o] = await Promise.all([
+    const [s, a, c, f, o, p, st] = await Promise.all([
       api.overview(), api.appointments('all'), api.chairs(), api.activity(), api.offers(true),
+      api.payroll(), api.inventory(),
     ]);
-    setStats(s); setAppts(a); setChairs(c); setFeed(f); setOffers(o);
+    setStats(s); setAppts(a); setChairs(c); setFeed(f); setOffers(o); setPayrollNow(p); setStockData(st);
   }, [api]);
 
   const reloadServices = useCallback(async () => {
@@ -132,6 +139,7 @@ export default function App() {
             <button key={n.key} className={page === n.key ? 'active' : ''} onClick={() => setPage(n.key)}>
               <Icon name={n.icon} /> <span>{n.label}</span>
               {n.key === 'chairs' && waiting.length > 0 && <span className="nav-count">{waiting.length}</span>}
+              {n.key === 'stock' && stats.criticalStock > 0 && <span className="nav-count danger">{stats.criticalStock}</span>}
             </button>
           ))}
         </nav>
@@ -163,6 +171,57 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+              <div className="grid2">
+                <div className="card">
+                  <div className="row-between">
+                    <h3>الطاقم — أداء الشهر</h3>
+                    <button className="btn btn-sm btn-ghost" onClick={() => setPage('staff')}>مسير الرواتب ←</button>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>الأسطى</th><th>الدور</th><th>العمولة</th><th>زبائن</th><th>المستحق</th></tr></thead>
+                      <tbody>
+                        {(payrollNow?.items ?? []).map((s) => (
+                          <tr key={s.staffId}>
+                            <td><b>{s.nameAr}</b></td>
+                            <td className="muted">{s.role}</td>
+                            <td className="gold">{s.commPct}%</td>
+                            <td>{s.count}</td>
+                            <td><b className="gold">{egp(s.net)}</b></td>
+                          </tr>
+                        ))}
+                        {(payrollNow?.items ?? []).length === 0 && <tr><td colSpan={5} className="empty">لا يوجد طاقم بعد</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="card">
+                  <div className="row-between">
+                    <h3>مؤشر المخزون</h3>
+                    <button className="btn btn-sm btn-ghost" onClick={() => setPage('stock')}>إدارة المخزن ←</button>
+                  </div>
+                  {stockData && stockData.items.length > 0 ? (
+                    <div className="stock-bars">
+                      {[...stockData.items]
+                        .sort((a, b) => (a.qty - a.minQty) - (b.qty - b.minQty))
+                        .slice(0, 6)
+                        .map((i) => {
+                          const max = Math.max(...stockData.items.map((x) => x.qty), 1);
+                          const critical = i.qty <= i.minQty;
+                          return (
+                            <div className="stock-bar-row" key={i.id}>
+                              <span className="muted">{i.name}</span>
+                              <div className="bar"><div className={`bar-fill ${critical ? 'danger' : ''}`} style={{ width: `${Math.max((i.qty / max) * 100, 4)}%` }} /></div>
+                              <b className={critical ? 'danger' : ''}>{i.qty}</b>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <p className="empty">لا توجد أصناف مسجلة</p>
+                  )}
                 </div>
               </div>
               {offers.length > 0 && (
@@ -264,6 +323,14 @@ export default function App() {
 
           {page === 'cashbox' && (
             <CashboxPage api={api} salon={salon} toast={toast} onChanged={refresh} />
+          )}
+
+          {page === 'staff' && (
+            <StaffPage api={api} salon={salon} toast={toast} />
+          )}
+
+          {page === 'stock' && (
+            <StockPage api={api} toast={toast} />
           )}
 
           {page === 'customers' && (

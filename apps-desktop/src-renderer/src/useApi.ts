@@ -2,8 +2,9 @@
 // In a plain browser (vite dev preview) an in-memory fallback keeps the UI reviewable — no data is persisted.
 import { useMemo } from 'react';
 import {
-  PAY_LABELS, type CheckoutInput, type Expense, type ExpenseInput, type Financials, type Offer,
-  type Receipt, type RobyApi, type Salon, type Service, type ServiceInput, type Template, type ZReport,
+  PAY_LABELS, type Advance, type CheckoutInput, type Expense, type ExpenseInput, type Financials,
+  type Offer, type PayrollSummary, type Receipt, type RobyApi, type Salon, type Service, type ServiceInput,
+  type StaffFull, type StockItem, type StockLevels, type StockPageData, type Template, type ZReport,
 } from './api';
 import * as seed from './data/seed';
 
@@ -52,11 +53,53 @@ function electronApi(invoke: (channel: string, ...args: unknown[]) => Promise<un
     offers: (onlyActive) => call('offers', onlyActive),
     saveOffer: (input) => call('save-offer', input),
     deleteOffer: (id) => call('delete-offer', id),
+
+    staffRoster: () => call('staff-roster'),
+    payroll: (month) => call('payroll', month),
+    saveStaff: (input) => call('save-staff', input),
+    deleteStaff: (id) => call('delete-staff', id),
+    addAdvance: (staffId, amount, note) => call('add-advance', staffId, amount, note),
+    deleteAdvance: (id) => call('delete-advance', id),
+    payStaff: (staffId, month) => call('pay-staff', staffId, month),
+
+    inventory: () => call('inventory'),
+    saveStock: (input) => call('save-stock', input),
+    deleteStock: (id) => call('delete-stock', id),
+    restock: (id, qty) => call('restock', id, qty),
   };
 }
 
 // ---- Browser-preview fallback (no persistence) ----
-type Mut = { sales: Receipt[]; expenses: Expense[]; salon: Salon; services: Service[]; templates: Template[]; offers: Offer[] };
+type Mut = {
+  sales: Receipt[]; expenses: Expense[]; salon: Salon; services: Service[]; templates: Template[]; offers: Offer[];
+  staff: StaffFull[]; advances: Advance[]; payments: { id: string; staffId: string; amount: number; month: string; at: string }[];
+  stock: StockItem[];
+};
+
+const monthOf = (iso: string) => iso.slice(0, 7);
+
+const FALLBACK_STOCK: StockItem[] = [
+  { id: 'inv_1', name: 'شمع وواكس شعر مات إيطالي', type: 'retail', cost: 75, price: 130, qty: 18, minQty: 10 },
+  { id: 'inv_2', name: 'شفرات دوركو بلاتينيوم (باكت 100)', type: 'salon', cost: 120, price: 0, qty: 3, minQty: 8 },
+  { id: 'inv_3', name: 'زيت لحية بالروزماري 50 مل', type: 'retail', cost: 90, price: 160, qty: 12, minQty: 5 },
+  { id: 'inv_4', name: 'كريم سنفرة بالخوخ 1 كجم', type: 'salon', cost: 85, price: 0, qty: 2, minQty: 5 },
+  { id: 'inv_5', name: 'فوط تواليت استعمال مرة واحدة', type: 'salon', cost: 150, price: 0, qty: 4, minQty: 10 },
+  { id: 'inv_6', name: 'كولونيا وتونيك بعد الحلاقة', type: 'salon', cost: 65, price: 0, qty: 14, minQty: 6 },
+  { id: 'inv_7', name: 'صبغة لحية بدون أمونيا بيجن', type: 'salon', cost: 110, price: 180, qty: 9, minQty: 6 },
+];
+
+function fallbackLevels(items: StockItem[]): StockLevels {
+  const critical = items.filter((i) => i.qty <= i.minQty);
+  return {
+    count: items.length,
+    salonCount: items.filter((i) => i.type === 'salon').length,
+    retailCount: items.filter((i) => i.type === 'retail').length,
+    criticalCount: critical.length,
+    costValue: items.reduce((s, i) => s + i.cost * i.qty, 0),
+    retailValue: items.reduce((s, i) => s + (i.price > 0 ? i.price * i.qty : 0), 0),
+    criticalItems: critical.map((i) => ({ id: i.id, name: i.name, qty: i.qty, minQty: i.minQty })),
+  };
+}
 
 function fallbackApi(): RobyApi {
   const m: Mut = {
@@ -69,6 +112,16 @@ function fallbackApi(): RobyApi {
     services: seed.services.map((s) => ({ ...s, desc: null })),
     templates: [],
     offers: [],
+    staff: [
+      { id: 'ahmed', nameAr: 'الأسطى أحمد خليل', role: 'كوافير محترف أول', commPct: 20, salary: 5000, photoPath: null },
+      { id: 'anwar', nameAr: 'الأسطى أنور عسران', role: 'مصفف لحية وتدريج', commPct: 20, salary: 5000, photoPath: null },
+      { id: 'jasem', nameAr: 'الأسطى جاسم كيتش', role: 'أخصائي بشرة وبخار', commPct: 20, salary: 5000, photoPath: null },
+      { id: 'roby', nameAr: 'كابتن روبي باربر', role: 'الماستر باربر وصاحب الصالون', commPct: 10, salary: 8000, photoPath: null },
+      { id: 'ibrahim', nameAr: 'الأسطى إبراهيم سعد', role: 'كوافير قصات حديثة وفيد', commPct: 25, salary: 4500, photoPath: null },
+    ],
+    advances: [{ id: 'ADV-101', staffId: 'ahmed', amount: 200, note: 'سلفة شخصية', at: new Date().toISOString() }],
+    payments: [],
+    stock: FALLBACK_STOCK.map((i) => ({ ...i })),
   };
   const previewFinancials = (): Financials => {
     const total = m.sales.reduce((s, r) => s + r.total, 0);
@@ -83,6 +136,31 @@ function fallbackApi(): RobyApi {
       netProfit: total - exp - Math.round(total * 0.2), expectedDrawer: cash - cashExp,
     };
   };
+  const previewPayroll = (month: string): PayrollSummary => {
+    const items = m.staff.map((s) => {
+      const rows = m.sales.filter((r) => monthOf(r.at) === month && r.barber === s.nameAr);
+      const revenue = rows.reduce((t, r) => t + r.subtotal - r.discount, 0);
+      const tips = rows.reduce((t, r) => t + r.tip, 0);
+      const commission = Math.round((revenue * s.commPct) / 100);
+      const advancesList = m.advances.filter((a) => a.staffId === s.id && monthOf(a.at) === month);
+      const advancesTotal = advancesList.reduce((t, a) => t + a.amount, 0);
+      const pay = m.payments.find((p) => p.staffId === s.id && p.month === month) ?? null;
+      return {
+        staffId: s.id, nameAr: s.nameAr, role: s.role, commPct: s.commPct, salary: s.salary, photoPath: s.photoPath,
+        month, revenue, count: rows.length, tips, commission, advancesTotal, advancesList,
+        net: s.salary + commission + tips - advancesTotal,
+        paid: pay ? { id: pay.id, amount: pay.amount, at: pay.at } : null,
+      };
+    });
+    const totals = items.reduce(
+      (acc, it) => ({
+        salary: acc.salary + it.salary, revenue: acc.revenue + it.revenue, commission: acc.commission + it.commission,
+        tips: acc.tips + it.tips, advances: acc.advances + it.advancesTotal, net: acc.net + it.net,
+      }),
+      { salary: 0, revenue: 0, commission: 0, tips: 0, advances: 0, net: 0 },
+    );
+    return { month, items, totals };
+  };
   return {
     async overview() {
       return { todaySales: previewFinancials().salesTotal, appointments: seed.appointments.length, waiting: 2, criticalStock: 3, staff: 5, lastBackup: null };
@@ -95,7 +173,7 @@ function fallbackApi(): RobyApi {
     async finishChair() { return seed.chairs[0] as never; },
     async callNext() {},
     async services() { return m.services; },
-    async staff() { return seed.chairs.map((c) => ({ id: c.barberId ?? String(c.id), name: `الأسطى ${c.barberId}`, role: 'barber' })); },
+    async staff() { return m.staff.map((s) => ({ id: s.id, name: s.nameAr, role: s.role })); },
     async customers() { return []; },
     async logActivity() {},
     async activity() { return []; },
@@ -163,6 +241,68 @@ function fallbackApi(): RobyApi {
       return o;
     },
     async deleteOffer(id) { m.offers = m.offers.filter((o) => o.id !== id); return { id }; },
+
+    async staffRoster() { return m.staff; },
+    async payroll(month) { return previewPayroll(month ?? new Date().toISOString().slice(0, 7)); },
+    async saveStaff(input) {
+      const row: StaffFull = {
+        id: input.id ?? `stf_${Date.now()}`, nameAr: input.nameAr, role: input.role,
+        commPct: input.commPct, salary: input.salary, photoPath: null, photoDataUrl: input.photoDataUrl ?? null,
+      };
+      const i = m.staff.findIndex((s) => s.id === row.id);
+      if (i >= 0) m.staff[i] = row; else m.staff.push(row);
+      return row;
+    },
+    async deleteStaff(id) {
+      const row = m.staff.find((s) => s.id === id);
+      m.staff = m.staff.filter((s) => s.id !== id);
+      return { id, nameAr: row?.nameAr ?? '' };
+    },
+    async addAdvance(staffId, amount, note) {
+      if (!m.staff.some((s) => s.id === staffId)) throw new Error('الأسطى غير موجود');
+      if (Math.round(amount) <= 0) throw new Error('قيمة السلفة يجب أن تكون أكبر من صفر');
+      const adv: Advance = { id: `ADV-${101 + m.advances.length}`, staffId, amount: Math.round(amount), note: note || 'سلفة', at: new Date().toISOString() };
+      m.advances.push(adv);
+      return adv;
+    },
+    async deleteAdvance(id) {
+      const adv = m.advances.find((a) => a.id === id);
+      if (!adv) throw new Error('السلفة غير موجودة');
+      m.advances = m.advances.filter((a) => a.id !== id);
+      return { id, staffId: adv.staffId, amount: adv.amount };
+    },
+    async payStaff(staffId, month) {
+      const item = previewPayroll(month).items.find((s) => s.staffId === staffId);
+      if (!item) throw new Error('الأسطى غير موجود');
+      if (item.paid) throw new Error('تم صرف مرتب هذا الشهر بالفعل');
+      if (item.net <= 0) throw new Error('صافي المستحق غير موجب — راجع السلف المسجلة');
+      const payment = { id: `pay_${Date.now()}`, staffId, amount: item.net, month, at: new Date().toISOString() };
+      m.payments.push(payment);
+      return { ...payment, nameAr: item.nameAr };
+    },
+
+    async inventory(): Promise<StockPageData> { return { items: m.stock, levels: fallbackLevels(m.stock) }; },
+    async saveStock(input) {
+      const row: StockItem = {
+        id: input.id ?? `inv_${Date.now()}`, name: input.name, type: input.type,
+        cost: input.cost, price: input.price, qty: input.qty, minQty: input.minQty,
+      };
+      const i = m.stock.findIndex((x) => x.id === row.id);
+      if (i >= 0) m.stock[i] = row; else m.stock.push(row);
+      return row;
+    },
+    async deleteStock(id) {
+      const row = m.stock.find((x) => x.id === id);
+      m.stock = m.stock.filter((x) => x.id !== id);
+      return { id, name: row?.name ?? '' };
+    },
+    async restock(id, qty) {
+      const row = m.stock.find((x) => x.id === id);
+      if (!row) throw new Error('الصنف غير موجود');
+      if (Math.round(qty) <= 0) throw new Error('كمية التوريد يجب أن تكون أكبر من صفر');
+      row.qty += Math.round(qty);
+      return { id, name: row.name, added: Math.round(qty), qty: row.qty };
+    },
   };
 }
 
