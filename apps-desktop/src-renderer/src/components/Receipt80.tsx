@@ -1,12 +1,14 @@
 // 80mm thermal receipt — 72mm printable width, pixel-exact to paper (DESIGN doc §3/§1.6).
 // Printing: only `.print-target` is visible (@media print in index.css).
+// Phase 6: optional WhatsApp resend (button hidden when the customer's phone is unknown).
 import type { Receipt, Salon } from '../api';
 
-export function Receipt80({ receipt, salon, onClose, onNewSale }: {
+export function Receipt80({ receipt, salon, onClose, onNewSale, onWhatsApp }: {
   receipt: Receipt;
   salon: Salon | null;
   onClose: () => void;
   onNewSale: () => void;
+  onWhatsApp?: () => void;
 }) {
   const at = new Date(receipt.at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
   return (
@@ -43,6 +45,9 @@ export function Receipt80({ receipt, salon, onClose, onNewSale }: {
         </div>
         <div className="modal-actions no-print">
           <button className="btn btn-ghost" onClick={onClose}>إغلاق</button>
+          {onWhatsApp && (
+            <button className="btn btn-wa" onClick={onWhatsApp}>إرسال واتساب</button>
+          )}
           <button className="btn" onClick={() => window.print()}>🖨️ طباعة الإيصال</button>
           <button className="btn btn-primary" onClick={onNewSale}>فاتورة جديدة</button>
         </div>

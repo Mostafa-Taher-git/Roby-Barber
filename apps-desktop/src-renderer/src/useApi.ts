@@ -69,6 +69,8 @@ function electronApi(invoke: (channel: string, ...args: unknown[]) => Promise<un
 
     licenseState: () => call('license-state'),
     activate: (key) => call('activate', key),
+
+    waShare: (input) => call('wa-share', input),
   };
 }
 
@@ -312,6 +314,14 @@ function fallbackApi(): RobyApi {
       return { status: 'active', mid: 'MID-0000-0000', daysLeft: null, activatedAt: null, reason: null, ownerWhatsApp: '201000000000' };
     },
     async activate(): Promise<LicenseState> { return this.licenseState(); },
+
+    async waShare(input) {
+      const digits = (input.phone ?? '').replace(/[^\d]/g, '');
+      if (digits.length < 8) throw new Error('رقم الموبايل غير صالح — تأكد من الرقم');
+      const body = (input.text ?? `رسالة ${input.kind} من روبي باربر — معاينة`).trim();
+      const text = body.replace(/\{(\w+)\}/g, (t, k: string) => (input.vars && Object.prototype.hasOwnProperty.call(input.vars, k) ? String(input.vars[k]) : t));
+      return { url: `https://wa.me/${digits}?text=${encodeURIComponent(text)}`, text, label: input.kind, to: digits };
+    },
   };
 }
 

@@ -14,6 +14,7 @@ const channels = [
   'staff-roster', 'payroll', 'save-staff', 'delete-staff', 'add-advance', 'delete-advance', 'pay-staff',
   'inventory', 'save-stock', 'delete-stock', 'restock',
   'license-state', 'activate',
+  'wa-share',
 ] as const;
 
 contextBridge.exposeInMainWorld('roby', {
@@ -27,5 +28,5 @@ contextBridge.exposeInMainWorld('roby', {
     ipcRenderer.on('roby:license-changed', () => cb());
   },
   version: '0.1.0',
-  phase: 5,
+  phase: 6,
 });

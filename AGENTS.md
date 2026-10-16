@@ -36,11 +36,11 @@ npm run rebuild:native        # better-sqlite3 -> Electron ABI (REQUIRED, see be
 
 ```powershell
 cd apps-desktop
-npm run smoke      # queue + money + payroll/stock + license tests against real SQLite (no GUI)
+npm run smoke      # queue + money + payroll/stock + license + whatsapp tests against real SQLite (no GUI)
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 162/162 PASS (gate: queue 13, money 45, payroll/stock 62, license 42).
+Current status: `smoke` = 194/194 PASS (gate: queue 13, money 45, payroll/stock 62, license 42, whatsapp 32).
 
 Headless UI self-check (verifies the renderer actually boots with live DB data — or shows the license lock screen):
 
@@ -82,3 +82,7 @@ All money math lives in pure functions (`subtotal - discount + tip`). UI never c
 ## Licensing (Phase 5)
 
 Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button). Owner tooling in `tools/license-gen/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.
+
+## WhatsApp (Phase 6)
+
+`wa.me` click-to-chat only — no API, no network keys. Templates are DB rows (`templates` table, 4 kinds: ticket/receipt/reminder/campaign) editable in Settings; `{placeholders}` are filled in main (`packages/whatsapp/`), unknown ones stay visible. All sends go through `wa-share` IPC (composes + logs to the activity feed); the renderer only opens the returned URL (main's `setWindowOpenHandler` sends http(s) links to the system browser). Customer phones are normalized to `20…` international format; invalid numbers throw Arabic errors.

@@ -277,3 +277,8 @@ select { font-family: inherit; }
 .lock-err { color: var(--danger); font-size: 0.9rem; margin: 0; }
 .lock-foot { color: var(--muted); font-size: 0.78rem; text-align: center; margin: 0; }
 .trial-chip { border: 1px solid var(--gold) !important; color: var(--gold) !important; }
+
+/* Phase 6 — WhatsApp */
+.btn-wa { border-color: rgba(37, 211, 102, 0.55) !important; color: #25d366 !important; }
+.btn-wa:hover { background: rgba(37, 211, 102, 0.12); }
+.btn-wa svg { vertical-align: -3px; }

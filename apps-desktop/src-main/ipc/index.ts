@@ -11,6 +11,7 @@ import { listStaffFull, staffPayroll, saveStaff, deleteStaff, addAdvance, delete
 import { inventoryPage, saveStockItem, deleteStockItem, restockItem } from '../packages/stock';
 import { licenseState, activateLicense } from '../packages/license';
 import { PUBLIC_KEY_PEM } from '../packages/license/publicKey';
+import { waShare } from '../packages/whatsapp';
 import { log } from '../logger';
 
 const logosDir = () => path.join(app.getPath('userData'), 'logos');
@@ -138,6 +139,9 @@ const handlers: Record<string, Handler> = {
     logActivity(getDb(), `تم تفعيل النسخة مدى الحياة على هذا الجهاز (${state.mid})`);
     return state;
   },
+
+  // Phase 6 — WhatsApp
+  'wa-share': ([input]) => waShare(getDb(), input as Parameters<typeof waShare>[1]),
 };
 
 export function setupIpc() {

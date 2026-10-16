@@ -4,6 +4,7 @@ import type { Appt, Chair, Customer, LicenseState, Offer, PayrollSummary, Salon,
 import { Icon, type IconName } from './Icon';
 import { ToastHost, useToast } from './components/Toast';
 import { LockScreen } from './components/LockScreen';
+import { WhatsAppModal } from './components/WhatsAppModal';
 import { PosPage, type PosPrefill } from './pages/PosPage';
 import { CashboxPage } from './pages/CashboxPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -55,6 +56,7 @@ export default function App() {
   const [stockData, setStockData] = useState<StockPageData | null>(null);
   const [license, setLicense] = useState<LicenseState | null>(null);
   const [activateOpen, setActivateOpen] = useState(false);
+  const [waCustomer, setWaCustomer] = useState<Customer | null>(null);
 
   const refresh = useCallback(async () => {
     const [s, a, c, f, o, p, st] = await Promise.all([
@@ -112,8 +114,19 @@ export default function App() {
     refresh();
   };
   const collect = (a: Appt) => {
-    setPrefill({ bookingId: a.id, name: a.name, service: a.service, price: a.price });
+    setPrefill({ bookingId: a.id, name: a.name, service: a.service, price: a.price, phone: a.phone });
     setPage('pos');
+  };
+
+  const sendTicket = async (a: Appt) => {
+    try {
+      const res = await api.waShare({ kind: 'ticket', phone: a.phone, vars: { name: a.name, time: a.time } });
+      window.open(res.url, '_blank');
+      toast('success', `تم فتح واتساب — ${res.label} (${a.name})`);
+      refresh();
+    } catch (e) {
+      toast('error', (e as Error).message);
+    }
   };
 
   const waiting = appts.filter((a) => a.status === 'waiting');
@@ -302,7 +315,12 @@ export default function App() {
                 {waiting.map((w) => (
                   <div key={w.id} className="queue-row">
                     <div><b>{w.name}</b> <span className="muted">— {w.service} ({w.time})</span></div>
-                    <button className="btn" onClick={() => seat(w.id)}><Icon name="chair" /> إجلاس على الكرسي</button>
+                    <div className="row-actions">
+                      <button className="btn btn-sm btn-wa" title="واتساب — تذكرة" onClick={() => sendTicket(w)}>
+                        <Icon name="whatsapp" />
+                      </button>
+                      <button className="btn" onClick={() => seat(w.id)}><Icon name="chair" /> إجلاس على الكرسي</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -370,7 +388,7 @@ export default function App() {
               </div>
               <div className="table-wrap">
                 <table>
-                  <thead><tr><th>الكود</th><th>الاسم</th><th>الموبايل</th><th>زيارات</th><th>نقاط الولاء</th><th>التصنيف</th><th>آخر حلاقة</th></tr></thead>
+                  <thead><tr><th>الكود</th><th>الاسم</th><th>الموبايل</th><th>زيارات</th><th>نقاط الولاء</th><th>التصنيف</th><th>آخر حلاقة</th><th>واتساب</th></tr></thead>
                   <tbody>
                     {customers.map((c) => (
                       <tr key={c.code}>
@@ -381,9 +399,14 @@ export default function App() {
                         <td className="gold">{c.points}</td>
                         <td>{c.vip ? '👑 VIP' : 'زبون'}</td>
                         <td className="muted">{c.lastVisit}</td>
+                        <td>
+                          <button className="btn btn-sm btn-wa" title="فتح واتساب مع الزبون" onClick={() => setWaCustomer(c)}>
+                            <Icon name="whatsapp" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
-                    {customers.length === 0 && <tr><td colSpan={7} className="empty">لا يوجد زبائن مطابقين</td></tr>}
+                    {customers.length === 0 && <tr><td colSpan={8} className="empty">لا يوجد زبائن مطابقين</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -417,6 +440,15 @@ export default function App() {
           api={api} state={license} salon={salon}
           onClose={() => setActivateOpen(false)}
           onActivated={(s) => { setLicense(s); setActivateOpen(false); toast('success', 'تم تفعيل النسخة مدى الحياة ✓'); }}
+        />
+      )}
+
+      {waCustomer && (
+        <WhatsAppModal
+          api={api} name={waCustomer.name} phone={waCustomer.phone} points={waCustomer.points}
+          onClose={() => setWaCustomer(null)}
+          onSent={(url) => { window.open(url, '_blank'); refresh(); }}
+          toast={toast}
         />
       )}
 

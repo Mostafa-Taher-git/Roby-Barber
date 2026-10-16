@@ -94,6 +94,10 @@ export interface LicenseState {
   ownerWhatsApp: string;
 }
 
+// Phase 6 — WhatsApp
+export type WaKind = 'ticket' | 'receipt' | 'reminder' | 'campaign' | 'custom';
+export interface WaShareResult { url: string; text: string; label: string; to: string; }
+
 export interface RobyApi {
   overview(): Promise<{ todaySales: number; appointments: number; waiting: number; criticalStock: number; staff: number; lastBackup: string | null }>;
   chairs(): Promise<Chair[]>;
@@ -145,6 +149,8 @@ export interface RobyApi {
 
   licenseState(): Promise<LicenseState>;
   activate(key: string): Promise<LicenseState>;
+
+  waShare(input: { kind: WaKind; phone: string; vars?: Record<string, string | number>; text?: string }): Promise<WaShareResult>;
 }
 
 export interface RobyBridge {

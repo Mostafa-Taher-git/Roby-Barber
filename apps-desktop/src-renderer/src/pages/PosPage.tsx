@@ -7,7 +7,7 @@ import type { ToastKind } from '../components/Toast';
 import { Icon } from '../Icon';
 import { egp } from '../format';
 
-export interface PosPrefill { bookingId: string; name: string; service: string; price: number; }
+export interface PosPrefill { bookingId: string; name: string; service: string; price: number; phone?: string; }
 
 export function PosPage({ api, services, staff, prefill, clearPrefill, salon, onChanged, toast }: {
   api: RobyApi;
@@ -31,15 +31,31 @@ export function PosPage({ api, services, staff, prefill, clearPrefill, salon, on
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [busy, setBusy] = useState(false);
   const bookingId = useRef<string | undefined>(undefined);
+  const [waPhone, setWaPhone] = useState('');
 
   useEffect(() => {
     if (!prefill) return;
     const svc = services.find((s) => prefill.service.includes(s.title) || s.title.includes(prefill.service));
     setCart([{ id: svc?.id ?? `booking:${prefill.bookingId}`, title: prefill.service, price: prefill.price, qty: 1 }]);
     setCustomer(prefill.name);
+    setWaPhone(prefill.phone ?? '');
     bookingId.current = prefill.bookingId;
     clearPrefill();
   }, [prefill, services, clearPrefill]);
+
+  const sendReceiptWa = async () => {
+    if (!receipt) return;
+    try {
+      const res = await api.waShare({
+        kind: 'receipt', phone: waPhone,
+        vars: { receipt: receipt.receiptNo, total: receipt.total, name: receipt.customer },
+      });
+      window.open(res.url, '_blank');
+      toast('success', `تم فتح واتساب — ${res.label}`);
+    } catch (e) {
+      toast('error', (e as Error).message);
+    }
+  };
 
   useEffect(() => { if (!barber && staff.length > 0) setBarber(staff[0].name); }, [staff, barber]);
 
@@ -178,7 +194,11 @@ export function PosPage({ api, services, staff, prefill, clearPrefill, salon, on
       </div>
 
       {receipt && (
-        <Receipt80 receipt={receipt} salon={salon} onClose={() => setReceipt(null)} onNewSale={() => setReceipt(null)} />
+        <Receipt80
+          receipt={receipt} salon={salon}
+          onClose={() => setReceipt(null)} onNewSale={() => setReceipt(null)}
+          onWhatsApp={waPhone ? sendReceiptWa : undefined}
+        />
       )}
     </div>
   );

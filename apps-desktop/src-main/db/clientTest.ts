@@ -16,6 +16,8 @@ import * as stockLevels from '../packages/stock/levels';
 import * as license from '../packages/license';
 import * as key from '../packages/license/key';
 import { machineId } from '../packages/license/machineId';
+import * as whatsapp from '../packages/whatsapp';
+import * as waCompose from '../packages/whatsapp/compose';
 
 export function build(file: string) {
   const sqlite = new Database(file);
@@ -99,5 +101,10 @@ export function build(file: string) {
     payloadBytes: key.payloadBytes,
     machineId,
     trialDays: license.TRIAL_DAYS,
+
+    waShare: (input: Parameters<typeof whatsapp.waShare>[1]) => whatsapp.waShare(db, input),
+    normalizePhone: waCompose.normalizeEgyptPhone,
+    fillTemplate: waCompose.fillTemplate,
+    waLink: waCompose.waLink,
   };
 }
