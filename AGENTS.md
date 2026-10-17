@@ -1,6 +1,6 @@
 # Roby Barber — Build & Test Commands
 
-Repo layout: `apps-desktop/` (Electron main + React renderer + SQLite), `demo/` (old browser prototype, not for production), `tools/license-generator/` (owner-only key tooling), `docs/` (user manual). Docs: `PROJECT_PLAN.md`, `DESIGN_SYSTEM_AND_MAPPING.md`, `number_of_hours_by_phase.md`.
+Repo layout: `apps-desktop/` (Electron main + React renderer + SQLite), `demo/` (old browser prototype, not for production), `tools/license-generator/` (owner-only key tooling), `docs/` (user manual + `DEVELOPER_NOTES.md` — full English tech notes). Docs: `PROJECT_PLAN.md`, `DESIGN_SYSTEM_AND_MAPPING.md`, `number_of_hours_by_phase.md`.
 
 ## Local build
 
