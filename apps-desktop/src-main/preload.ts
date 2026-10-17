@@ -14,6 +14,7 @@ const channels = [
   'staff-roster', 'payroll', 'save-staff', 'delete-staff', 'add-advance', 'delete-advance', 'pay-staff',
   'inventory', 'save-stock', 'delete-stock', 'restock',
   'license-state', 'activate',
+  'license-contact', 'save-license-contact',
   'wa-share',
   'backup-now', 'backup-list', 'backup-status', 'backup-open-folder', 'backup-export', 'backup-import', 'restore-backup',
 ] as const;

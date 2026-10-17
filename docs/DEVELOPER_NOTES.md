@@ -37,7 +37,7 @@ apps-desktop/
   src-main/            Electron main process (TypeScript)
     main.ts            Boot: DB → migrations → IPC → license → timers → window + splash
     preload.ts         contextBridge allowlist (channel must be listed here!)
-    ipc/index.ts       All ipcMain handlers (52 channels)
+    ipc/index.ts       All ipcMain handlers (54 channels)
     logger.ts          JSON lines → %APPDATA%\roby-barber-desktop\logs\app.log
     db/                client.ts (singleton + migrations), schema.ts, tables.ts (DDL), seed.ts
     packages/          Pure/domain logic: queue, money, payroll, stock, license/, whatsapp/, backup.ts, reports.ts
@@ -116,9 +116,10 @@ renderer when state changes) → backup timers (every 10 min, once ~90s after bo
   migrations (e.g. `expenses.at`, `licenses.tampered_at`) and backfills.
 * `rawClient()` returns the raw better-sqlite3 handle (backup uses `exec`, VACUUM INTO).
   `closeDb()` closes the singleton so the file can be swapped during restore.
-* 15 tables: `salon`, `staff`, `services`, `chairs`, `appointments`, `inventory`,
+* 16 tables: `salon`, `staff`, `services`, `chairs`, `appointments`, `inventory`,
   `staff_advances`, `staff_payments`, `customers`, `expenses`, `sales`, `licenses`,
-  `templates`, `offers`, `activity_log`.
+  `templates`, `offers`, `activity_log`, `app_settings` (key-value runtime settings,
+  e.g. `contact_whatsapp`).
 * Seed: 5 staff, ~7 inventory items, services, 4 WhatsApp templates
   (`tpl_ticket/tpl_receipt/tpl_reminder/tpl_campaign`), salon row, no sales.
   ID conventions: receipts `RB-1001+`, expenses `EXP-101+`, advances `ADV-101+`,
@@ -153,9 +154,10 @@ renderer when state changes) → backup timers (every 10 min, once ~90s after bo
   per customer; logs to `issued_keys.csv`; `.bat` double-click helpers; Arabic README).
 * **The private key never enters the repo** (`%USERPROFILE%\RobyBarber-License-Keys\`),
   only the public key is embedded (`packages/license/publicKey.ts`).
-* Handover checklist: replace `OWNER_WHATSAPP` placeholder (`license/index.ts:19`) with
-  the real owner number **before** the first customer build; hand over `private.pem`
-  (USB) + the generator folder.
+* Vendor contact on the lock screen (the number the MID is sent to) is stored in
+  `app_settings.contact_whatsapp`, editable anytime in **Settings → التفعيل والدعم**
+  (empty = unset; the lock screen then hides the wa.me button and shows copy-MID
+  guidance instead). Handover: set it once from Settings or pre-seed the DB.
 
 ## 8. WhatsApp (Phase 6)
 
@@ -220,14 +222,14 @@ Templates are DB rows, editable in Settings. Unknown placeholders stay visible.
 * DB wipe for testing: `Get-ChildItem "$env:APPDATA\roby-barber-desktop\roby.db*" | Remove-Item -Force`
   (a bare `Remove-Item roby.db*` path is a no-op).
 
-## 13. Test inventory (smoke = 220 checks)
+## 13. Test inventory (smoke = 226 checks)
 
 | File | Checks | Covers |
 |---|---|---|
 | `smoke-phase2.ts` | 13 | queue state machine (waiting → in_chair → done/cancelled) |
 | `smoke-phase3.ts` | 45 | money math, checkout, ref# guard, expenses, Z-report |
 | `smoke-phase4.ts` | 62 | payroll (advances, net recompute, double-pay guard), stock restock/soft-delete |
-| `smoke-phase5.ts` | 42 | license encode/verify (ephemeral test keypair), trial expiry, tamper/rollback/transfer locks |
+| `smoke-phase5.ts` | 48 | license encode/verify (ephemeral test keypair), trial expiry, tamper/rollback/transfer locks, editable vendor contact |
 | `smoke-phase6.ts` | 32 | phone normalization, template filling, waShare logging, Arabic errors |
 | `smoke-phase7.ts` | 26 | snapshot content/naming, retention pruning, validation guards, restore swap, overview wiring |
 
@@ -244,6 +246,5 @@ Smoke runs against real SQLite (temp dirs), never the user DB.
 
 ## 15. Known limitations / follow-ups
 
-* `OWNER_WHATSAPP` placeholder must be set before delivery (see §7).
 * Code signing certificate still pending (SmartScreen warning until then).
 * `demo/` is reference-only; do not port fixes backwards into it.

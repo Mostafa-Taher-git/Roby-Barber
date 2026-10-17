@@ -75,8 +75,18 @@ console.log('P5-3 fresh install → 7-day trial');
 const s0 = main.licenseState(testPub, MID);
 check('fresh PC starts trial', s0.status === 'trial');
 check('trial = 7 days left', s0.daysLeft === main.trialDays);
-check('trial exposes MID + owner WhatsApp', s0.mid === MID && s0.ownerWhatsApp.length > 6);
+check('trial exposes MID', s0.mid === MID);
+check('contact whatsapp empty until configured', s0.ownerWhatsApp === '');
 check('trial row persisted with last_seen', !!main.licenseRow(MID));
+
+console.log('P5-3b editable vendor contact (Settings, changeable anytime)');
+const savedContact = main.setContactWhatsapp('01012345678');
+check('contact normalizes to intl format', savedContact === '201012345678');
+check('licenseState reflects saved contact', main.licenseState(testPub, MID).ownerWhatsApp === '201012345678');
+check('contact changeable anytime', main.setContactWhatsapp('+20 100 999 8888') === '201009998888');
+const badContactMsg = throwMsg(() => main.setContactWhatsapp('abc'));
+check('invalid contact rejected in Arabic', badContactMsg.includes('غير صالح'));
+check('contact can be cleared back to empty', main.setContactWhatsapp('') === '' && main.licenseState(testPub, MID).ownerWhatsApp === '');
 
 console.log('P5-4 countdown + expiry');
 main.setLicenseRow(MID, { trialStartedAt: iso(-3), lastSeen: iso(-3) });

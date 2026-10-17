@@ -62,10 +62,12 @@ async function createWindow() {
   // License boot: fresh PC starts a 7-day trial; the renderer shows the lock screen when it ends.
   const license = licenseState(db, PUBLIC_KEY_PEM);
   log.info('license state', { status: license.status, mid: license.mid, daysLeft: license.daysLeft });
+  let lastStatus = license.status;
   const revalidate = () => {
     const next = licenseState(db, PUBLIC_KEY_PEM);
-    if (next.status !== license.status) {
-      log.warn('license state changed', { from: license.status, to: next.status });
+    if (next.status !== lastStatus) {
+      log.warn('license state changed', { from: lastStatus, to: next.status });
+      lastStatus = next.status;
       win?.webContents.send('roby:license-changed');
     }
   };

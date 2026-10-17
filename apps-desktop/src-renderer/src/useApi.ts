@@ -72,6 +72,9 @@ function electronApi(invoke: (channel: string, ...args: unknown[]) => Promise<un
 
     waShare: (input) => call('wa-share', input),
 
+    licenseContact: () => call('license-contact'),
+    saveLicenseContact: (phone) => call('save-license-contact', phone),
+
     backupNow: () => call('backup-now'),
     backupList: () => call('backup-list'),
     backupStatus: () => call('backup-status'),
@@ -319,9 +322,11 @@ function fallbackApi(): RobyApi {
 
     // Preview is always "active" — the lock/trial flow only exists in the real app.
     async licenseState(): Promise<LicenseState> {
-      return { status: 'active', mid: 'MID-0000-0000', daysLeft: null, activatedAt: null, reason: null, ownerWhatsApp: '201000000000' };
+      return { status: 'active', mid: 'MID-0000-0000', daysLeft: null, activatedAt: null, reason: null, ownerWhatsApp: '' };
     },
     async activate(): Promise<LicenseState> { return this.licenseState(); },
+    async licenseContact() { return { phone: '' }; },
+    async saveLicenseContact(phone: string) { return { phone: String(phone ?? '').trim() }; },
 
     async waShare(input) {
       const digits = (input.phone ?? '').replace(/[^\d]/g, '');

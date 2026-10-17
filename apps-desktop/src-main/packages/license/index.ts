@@ -9,14 +9,13 @@ import { eq } from 'drizzle-orm';
 import { licenses, type BetterSQLiteDatabase } from '../../db/schema';
 import { machineId } from './machineId';
 import { reasonAr, verifyLicenseKey } from './key';
+import { getContactWhatsapp } from '../settings';
 import { log } from '../../logger';
 
 export const TRIAL_DAYS = 7;
 export const ROLLBACK_TOLERANCE_MS = 2 * 60 * 60 * 1000; // 2h — DST/manual clock drift tolerance
 /** Disputed MIDs — ship in an app update to lock a machine out (offline revoke limit, documented). */
 export const BLOCKED_MIDS: string[] = [];
-/** Where the barber sends his MID to get a key (change before handover if needed). */
-export const OWNER_WHATSAPP = '201000000000';
 
 export type LicenseStatus = 'trial' | 'active' | 'locked' | 'expired';
 export type LockReason = 'trial-expired' | 'clock-rollback' | 'transferred' | 'key-invalid' | 'blocked' | null;
@@ -62,13 +61,15 @@ function rowFor(db: BetterSQLiteDatabase, mid: string) {
 
 export function licenseState(db: BetterSQLiteDatabase, publicKeyPem: string, mid = machineId()): LicenseState {
   const now = Date.now();
+  // Vendor contact for the lock screen — user-editable anytime in Settings (empty = not configured).
+  const ownerWhatsApp = getContactWhatsapp(db);
   const rows = db.select().from(licenses).all();
   let row = rows.find((r) => r.machineId === mid);
 
   if (!row) {
     if (rows.length > 0) {
       // DB came from another PC (restored backup) — never auto-trial, require this MID's key.
-      return { status: 'locked', mid, daysLeft: null, activatedAt: null, reason: 'transferred', ownerWhatsApp: OWNER_WHATSAPP };
+      return { status: 'locked', mid, daysLeft: null, activatedAt: null, reason: 'transferred', ownerWhatsApp };
     }
     const iso = new Date(now).toISOString();
     db.insert(licenses).values({ machineId: mid, key: '', activatedAt: null, trialStartedAt: iso, lastSeen: iso }).run();
@@ -78,12 +79,12 @@ export function licenseState(db: BetterSQLiteDatabase, publicKeyPem: string, mid
 
   // Clock rollback → tampered (sticky).
   if (row.tamperedAt) {
-    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason: 'clock-rollback', ownerWhatsApp: OWNER_WHATSAPP };
+    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason: 'clock-rollback', ownerWhatsApp };
   }
   if (now + ROLLBACK_TOLERANCE_MS < Date.parse(row.lastSeen)) {
     db.update(licenses).set({ tamperedAt: new Date(now).toISOString() }).where(eq(licenses.machineId, mid)).run();
     log.warn('license: clock rollback detected', { lastSeen: row.lastSeen });
-    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason: 'clock-rollback', ownerWhatsApp: OWNER_WHATSAPP };
+    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason: 'clock-rollback', ownerWhatsApp };
   }
 
   // Activated → re-verify the stored key every launch/24h.
@@ -94,11 +95,11 @@ export function licenseState(db: BetterSQLiteDatabase, publicKeyPem: string, mid
       if (now > Date.parse(row.lastSeen)) {
         db.update(licenses).set({ lastSeen: new Date(now).toISOString() }).where(eq(licenses.machineId, mid)).run();
       }
-      return { status: 'active', mid, daysLeft: null, activatedAt: row.activatedAt, reason: null, ownerWhatsApp: OWNER_WHATSAPP };
+      return { status: 'active', mid, daysLeft: null, activatedAt: row.activatedAt, reason: null, ownerWhatsApp };
     }
     const reason: LockReason = result && !result.ok && result.reason === 'blocked' ? 'blocked' : 'key-invalid';
     log.warn('license: stored key failed re-verification', reason);
-    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason, ownerWhatsApp: OWNER_WHATSAPP };
+    return { status: 'locked', mid, daysLeft: null, activatedAt: row.activatedAt, reason, ownerWhatsApp };
   }
 
   // Trial countdown.
@@ -108,9 +109,9 @@ export function licenseState(db: BetterSQLiteDatabase, publicKeyPem: string, mid
     db.update(licenses).set({ lastSeen: new Date(now).toISOString() }).where(eq(licenses.machineId, mid)).run();
   }
   if (daysLeft <= 0) {
-    return { status: 'expired', mid, daysLeft: 0, activatedAt: null, reason: 'trial-expired', ownerWhatsApp: OWNER_WHATSAPP };
+    return { status: 'expired', mid, daysLeft: 0, activatedAt: null, reason: 'trial-expired', ownerWhatsApp };
   }
-  return { status: 'trial', mid, daysLeft, activatedAt: null, reason: null, ownerWhatsApp: OWNER_WHATSAPP };
+  return { status: 'trial', mid, daysLeft, activatedAt: null, reason: null, ownerWhatsApp };
 }
 
 /** Activate with an owner-issued key. Allowed during trial, after expiry, or on a transferred DB. */

@@ -36,8 +36,8 @@ jobs:
         run: npm run build:main
         working-directory: apps-desktop
 
-      # Phase 2+3 gate: queue state machine + money math must pass before any release build
-      - name: Smoke tests (Phase 2 + 3)
+      # Gate: the full smoke suite (all phases) must pass before any release build
+      - name: Smoke tests (all phases)
         run: npm run smoke
         working-directory: apps-desktop
       - name: Seed check (counts only)

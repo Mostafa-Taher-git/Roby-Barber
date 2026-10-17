@@ -6,7 +6,7 @@ import { listServices, listCustomers, listStaff, saveService, deleteService } fr
 import { overview, logActivity, activity } from '../packages/reports';
 import { checkout, recentSales } from '../packages/pos';
 import { listExpenses, addExpense, deleteExpense, financials, zReport } from '../packages/cashbox';
-import { getSalon, saveSalon, saveLogo, resetLogo, listTemplates, saveTemplates, listOffers, saveOffer, deleteOffer } from '../packages/settings';
+import { getSalon, saveSalon, saveLogo, resetLogo, listTemplates, saveTemplates, listOffers, saveOffer, deleteOffer, getContactWhatsapp, setContactWhatsapp } from '../packages/settings';
 import { listStaffFull, staffPayroll, saveStaff, deleteStaff, addAdvance, deleteAdvance, payStaff } from '../packages/payroll';
 import { inventoryPage, saveStockItem, deleteStockItem, restockItem } from '../packages/stock';
 import { licenseState, activateLicense } from '../packages/license';
@@ -161,6 +161,14 @@ const handlers: Record<string, Handler> = {
 
   // Phase 6 — WhatsApp
   'wa-share': ([input]) => waShare(getDb(), input as Parameters<typeof waShare>[1]),
+
+  // License contact (editable anytime from Settings) — the number the lock screen sends the MID to.
+  'license-contact': () => ({ phone: getContactWhatsapp(getDb()) }),
+  'save-license-contact': ([phone]) => {
+    const saved = setContactWhatsapp(getDb(), String(phone ?? ''));
+    logActivity(getDb(), saved ? `تم ضبط رقم واتساب التفعيل: ${saved}` : 'تم مسح رقم واتساب التفعيل');
+    return { phone: saved };
+  },
 
   // Phase 7 — Backup & restore
   'backup-now': () => {

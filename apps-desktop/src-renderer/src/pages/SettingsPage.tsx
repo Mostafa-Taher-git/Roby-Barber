@@ -29,8 +29,11 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
   const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
   const [backupList, setBackupList] = useState<BackupInfo[]>([]);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [contact, setContact] = useState('');
+  const [contactSaved, setContactSaved] = useState('');
 
   useEffect(() => { api.backupStatus().then(setBackupStatus).catch(() => {}); }, [api]);
+  useEffect(() => { api.licenseContact().then((r) => { setContact(r.phone); setContactSaved(r.phone); }).catch(() => {}); }, [api]);
 
   useEffect(() => {
     if (salon) setForm({ nameAr: salon.nameAr, address: salon.address, phone: salon.phone, instapay: salon.instapay, vodafone: salon.vodafone });
@@ -134,8 +137,16 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
     } catch (e) { toast('error', (e as Error).message); }
   };
 
-  const refreshBackups = async () => {
+  const saveContact = async () => {
     try {
+      const r = await api.saveLicenseContact(contact);
+      setContact(r.phone);
+      setContactSaved(r.phone);
+      toast('success', r.phone ? 'تم حفظ رقم واتساب التفعيل' : 'تم مسح رقم واتساب التفعيل');
+    } catch (e) { toast('error', (e as Error).message); }
+  };
+
+  const refreshBackups = async () => {    try {
       const [status, list] = await Promise.all([api.backupStatus(), api.backupList()]);
       setBackupStatus(status);
       setBackupList(list.slice(0, 5));
@@ -195,6 +206,20 @@ export function SettingsPage({ api, services, onServicesChanged, salon, onSalonC
         </div>
         <div className="modal-actions">
           <button className="btn btn-primary" onClick={saveSalon}>حفظ بيانات الصالون</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>التفعيل والدعم (واتساب)</h3>
+        <p className="muted">الرقم الذي يُرسل إليه طلب التفعيل من شاشة القفل (رقم مسؤول البرنامج). يمكن تغييره في أي وقت، واتركه فارغاً لمسحه.</p>
+        <div className="settings-grid">
+          <label>رقم واتساب التفعيل
+            <input dir="ltr" inputMode="tel" placeholder="01012345678" value={contact} onChange={(e) => setContact(e.target.value)} />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-primary" disabled={contact.trim() === contactSaved} onClick={saveContact}>حفظ الرقم</button>
+          {contactSaved && <span className="muted">الرقم الحالي: <b dir="ltr">{contactSaved}</b></span>}
         </div>
       </div>
 

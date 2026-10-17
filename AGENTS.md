@@ -40,7 +40,7 @@ npm run smoke      # queue + money + payroll/stock + license + whatsapp + backup
 npm run seed       # one-time data migration check, prints table counts
 ```
 
-Current status: `smoke` = 220/220 PASS (gate: queue 13, money 45, payroll/stock 62, license 42, whatsapp 32, backup 26).
+Current status: `smoke` = 226/226 PASS (gate: queue 13, money 45, payroll/stock 62, license 48, whatsapp 32, backup 26).
 
 Headless UI self-check (verifies the renderer actually boots with live DB data — or shows the license lock screen):
 
@@ -81,7 +81,7 @@ All money math lives in pure functions (`subtotal - discount + tip`). UI never c
 
 ## Licensing (Phase 5)
 
-Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button). Owner tooling in `tools/license-generator/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer, plus double-click `.bat` helpers and an Arabic README for the owner). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.
+Offline, MID-bound RSA-2048 keys. Fresh PC = 7-day trial → lock screen (MID + wa.me button; the target number lives in `app_settings.contact_whatsapp`, editable anytime in Settings → التفعيل والدعم). Owner tooling in `tools/license-generator/` (`keygen.cjs` once, `sign.cjs --mid MID-XXXX-XXXX` per customer, plus double-click `.bat` helpers and an Arabic README for the owner). The private key lives OUTSIDE the repo (`%USERPROFILE%\RobyBarber-License-Keys\private.pem`) — never commit `*.pem`/`*.key`. Only the public key ships, embedded in `src-main/packages/license/publicKey.ts`. No network involved; disputed machines are blocked by adding their MID to `BLOCKED_MIDS` (ship an update). Clock rollback (last_seen in the future >2h) = sticky tamper lock; a valid owner key clears it.
 
 ## WhatsApp (Phase 6)
 

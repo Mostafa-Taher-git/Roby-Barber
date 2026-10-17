@@ -150,3 +150,8 @@ export const activityLog = sqliteTable('activity_log', {
   at: text('at').notNull(),
   text: text('text').notNull(),
 });
+
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(), // e.g. contact_whatsapp
+  value: text('value').notNull(),
+});

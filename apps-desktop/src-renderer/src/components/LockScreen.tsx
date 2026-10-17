@@ -30,6 +30,7 @@ export function LockScreen({ api, state, salon, onActivated, onClose }: {
   const [copied, setCopied] = useState(false);
 
   const waText = encodeURIComponent(`سلام عليكم كابتن روبي 👋\nعايز أفعّل برنامج إدارة الصالون.\nرقم الجهاز (MID): ${state.mid}`);
+  const hasContact = state.ownerWhatsApp.length > 0;
   const waUrl = `https://wa.me/${state.ownerWhatsApp}?text=${waText}`;
 
   const copyMid = async () => {
@@ -76,10 +77,15 @@ export function LockScreen({ api, state, salon, onActivated, onClose }: {
         <b className="mid-code" dir="ltr">{state.mid}</b>
         <div className="mid-actions">
           <button className="btn btn-ghost btn-sm" onClick={copyMid}>{copied ? 'تم النسخ ✓' : 'نسخ الرقم'}</button>
-          <a className="btn btn-primary btn-sm" href={waUrl} target="_blank" rel="noreferrer">
-            إرسال الرقم على واتساب
-          </a>
+          {hasContact && (
+            <a className="btn btn-primary btn-sm" href={waUrl} target="_blank" rel="noreferrer">
+              إرسال الرقم على واتساب
+            </a>
+          )}
         </div>
+        {hasContact
+          ? <span className="muted" style={{ fontSize: '0.78rem' }}>سيتم الإرسال إلى واتساب: <b dir="ltr">{state.ownerWhatsApp}</b></span>
+          : <span className="lock-reason" style={{ fontSize: '0.82rem' }}>⚠️ رقم واتساب التفعيل غير مضبوط — اضبطه من «الإعدادات ← التفعيل والدعم» قبل انتهاء الفترة التجريبية، أو انسخ رقم الجهاز وأرسله بنفسك.</span>}
       </div>
 
       <label className="lock-key-label">مفتاح التفعيل

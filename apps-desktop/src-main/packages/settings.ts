@@ -1,8 +1,10 @@
-// Settings domain — salon info, templates, offers, logo files. Validation lives here, UI only displays errors.
+// Settings domain — salon info, templates, offers, logo files, app key-value settings.
+// Validation lives here, UI only displays errors.
 import { eq } from 'drizzle-orm';
-import { offers, salon, templates, type BetterSQLiteDatabase } from '../db/schema';
+import { appSettings, offers, salon, templates, type BetterSQLiteDatabase } from '../db/schema';
 import { log } from '../logger';
 import { readImageDataUrl, removeImage, saveImageDataUrl } from './images';
+import { normalizeEgyptPhone } from './whatsapp/compose';
 
 export interface SalonRow {
   id: string; nameAr: string; address: string; phone: string;
@@ -106,4 +108,40 @@ export function deleteOffer(db: BetterSQLiteDatabase, id: string) {
   db.delete(offers).where(eq(offers.id, id)).run();
   log.info('offer deleted', id);
   return { id };
+}
+
+// ---- app_settings key-value store (Phase 7+: user-editable runtime settings) ----
+
+export const CONTACT_WHATSAPP_KEY = 'contact_whatsapp';
+
+export function getSetting(db: BetterSQLiteDatabase, key: string): string | null {
+  return db.select().from(appSettings).where(eq(appSettings.key, key)).get()?.value ?? null;
+}
+
+export function setSetting(db: BetterSQLiteDatabase, key: string, value: string) {
+  db.insert(appSettings).values({ key, value })
+    .onConflictDoUpdate({ target: appSettings.key, set: { value } }).run();
+}
+
+/**
+ * WhatsApp number the lock screen sends the MID to (the licence vendor).
+ * Editable anytime in Settings; empty string = not configured yet.
+ */
+export function getContactWhatsapp(db: BetterSQLiteDatabase): string {
+  return getSetting(db, CONTACT_WHATSAPP_KEY) ?? '';
+}
+
+/** Save the contact number (any Egyptian mobile format, stored international). Empty = clear it. */
+export function setContactWhatsapp(db: BetterSQLiteDatabase, input: string): string {
+  const trimmed = String(input ?? '').trim();
+  if (!trimmed) {
+    db.delete(appSettings).where(eq(appSettings.key, CONTACT_WHATSAPP_KEY)).run();
+    log.info('contact whatsapp cleared');
+    return '';
+  }
+  const normalized = normalizeEgyptPhone(trimmed);
+  if (!normalized) throw new Error('رقم واتساب التفعيل غير صالح — اكتب رقم موبايل صحيح (مثال: 01012345678)');
+  setSetting(db, CONTACT_WHATSAPP_KEY, normalized);
+  log.info('contact whatsapp updated', normalized);
+  return normalized;
 }

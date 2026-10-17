@@ -94,6 +94,9 @@ export interface LicenseState {
   ownerWhatsApp: string;
 }
 
+// License — vendor WhatsApp contact (lock screen MID handoff, editable in Settings)
+export interface LicenseContact { phone: string; }
+
 // Phase 6 — WhatsApp
 export type WaKind = 'ticket' | 'receipt' | 'reminder' | 'campaign' | 'custom';
 export interface WaShareResult { url: string; text: string; label: string; to: string; }
@@ -156,6 +159,9 @@ export interface RobyApi {
   activate(key: string): Promise<LicenseState>;
 
   waShare(input: { kind: WaKind; phone: string; vars?: Record<string, string | number>; text?: string }): Promise<WaShareResult>;
+
+  licenseContact(): Promise<LicenseContact>;
+  saveLicenseContact(phone: string): Promise<LicenseContact>;
 
   backupNow(): Promise<BackupInfo>;
   backupList(): Promise<BackupInfo[]>;

@@ -58,6 +58,8 @@ export function build(file: string) {
     listOffers: (onlyActive?: boolean) => settings.listOffers(db, onlyActive),
     saveOffer: (input: Parameters<typeof settings.saveOffer>[1]) => settings.saveOffer(db, input),
     deleteOffer: (id: string) => settings.deleteOffer(db, id),
+    getContactWhatsapp: () => settings.getContactWhatsapp(db),
+    setContactWhatsapp: (input: string) => settings.setContactWhatsapp(db, input),
 
     staffRoster: () => payroll.listStaffFull(db),
     payroll: (month: string) => payroll.staffPayroll(db, month),
