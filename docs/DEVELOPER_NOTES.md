@@ -200,8 +200,11 @@ Templates are DB rows, editable in Settings. Unknown placeholders stay visible.
 
 * Push a `v*` tag → `.github/workflows/release-windows.yml` on `windows-latest`:
   renderer build → desktop deps + `rebuild:native` → main build → **`npm run smoke`
-  gate (220 checks)** → seed check → `electron-builder --win nsis --x64` → artifact
-  `RobyBarber-Setup-<version>.exe`.
+  gate (226 checks)** → seed check (exits explicitly — `Electron` keeps the process
+  alive otherwise, which hung CI once) → tag/version guard →
+  `electron-builder --win nsis --x64` → upload CI artifact → **create GitHub Release
+  with `RobyBarber-Setup-<version>.exe` attached** (softprops/action-gh-release,
+  `permissions: contents: write`).
 * Pushing workflow files requires the token to carry the **workflow** scope. The
   `github_pat_...` deploy token does NOT have it; the `gh` CLI token does:
   `$tok = gh auth token; git -c credential.helper= push "https://x-access-token:$tok@github.com/...git" main`.
